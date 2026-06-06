@@ -1,0 +1,32 @@
+{
+  "name": "tabernacle-de-la-moissoonn-erp-premium",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p packages/domain/tsconfig.json && tsc -p packages/db/tsconfig.json && tsc -p apps/api/tsconfig.json && npm run typecheck -w @tabernacle/erp-premium-desktop",
+    "build": "npm run build -w @tabernacle/erp-premium-domain && npm run build -w @tabernacle/erp-premium-db && npm run build -w @tabernacle/erp-premium-api",
+    "api:dev": "npm run dev -w @tabernacle/erp-premium-api",
+    "api:start": "npm run start -w @tabernacle/erp-premium-api",
+    "desktop:dev": "npm run dev -w @tabernacle/erp-premium-desktop",
+    "desktop:build": "npm run build -w @tabernacle/erp-premium-desktop",
+    "build:all": "npm run build -w @tabernacle/erp-premium-domain && npm run build -w @tabernacle/erp-premium-db && npm run build -w @tabernacle/erp-premium-api && npm run build -w @tabernacle/erp-premium-desktop",
+    "start:prod": "npm run build:all && node scripts/start-prod.mjs",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose --profile production up -d",
+    "docker:down": "docker compose down",
+    "deploy:vm": "echo Voir deploy/README.md — sur la VM : sudo bash deploy/install-vm.sh",
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "npm run api:dev",
+    "installer:win": "powershell -NoProfile -ExecutionPolicy Bypass -File installer/build-windows.ps1",
+    "test:smoke": "npm run build -w @tabernacle/erp-premium-db && npm run build -w @tabernacle/erp-premium-api && node apps/api/scripts/smoke-finance.mjs",
+    "test:domain": "npm run build -w @tabernacle/erp-premium-domain && node --test scripts/test-closure.mjs scripts/test-alerts.mjs",
+    "test:all": "npm run typecheck && npm run test:domain"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
+

@@ -1,0 +1,20 @@
+{
+  "name": "@tabernacle/erp-premium-db",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "better-sqlite3-multiple-ciphers": "^11.9.1",
+    "@tabernacle/erp-premium-domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2"
+  }
+}
+

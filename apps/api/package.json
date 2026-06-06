@@ -1,0 +1,22 @@
+{
+  "name": "@tabernacle/erp-premium-api",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "npm run build -w @tabernacle/erp-premium-domain && npm run build -w @tabernacle/erp-premium-db && tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "fastify": "^5.2.1",
+    "@tabernacle/erp-premium-db": "workspace:*",
+    "@tabernacle/erp-premium-domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2"
+  }
+}
