@@ -10,7 +10,7 @@ packages/
   db/         — SQLite/SQLCipher, repositories, FinanceModule, sync replay
 apps/
   api/        — API REST Fastify (RBAC lectures + écritures)
-  desktop/    — Interface React
+  desktop/    — Interface React + shell **Tauri** (application native)
 ```
 
 ## Fonctionnalités Finance
@@ -56,7 +56,32 @@ npm run test:all      # typecheck (domain + db + api + desktop) + tests domaine
 npm run build:all
 ```
 
-## Installateur Windows
+## Application desktop native (Tauri)
+
+Fenêtre Windows dédiée (sans ouvrir Chrome manuellement). L'API Node démarre automatiquement en arrière-plan.
+
+**Prérequis :** [Rust](https://rustup.rs/) (cargo), Node.js 22+
+
+```powershell
+# Développement — fenêtre native + hot-reload Vite
+npm run desktop:native:dev
+
+# Production — installeur .msi / .exe Tauri
+npm run desktop:native:build
+```
+
+Installateur généré : `apps/desktop/src-tauri/target/release/bundle/`
+
+| Mode | Interface | API |
+|------|-----------|-----|
+| `npm run dev` | Navigateur (5173) | 3847 |
+| `npm run desktop:native:dev` | Fenêtre Tauri | 3847 (auto) |
+| Installateur Inno Setup | Navigateur auto | 3847 (auto) |
+| `npm run desktop:native:build` | Fenêtre Tauri | 3847 embarquée |
+
+Données natives Tauri : `%APPDATA%\com.tabernacle.moisson.erp\data\`
+
+## Installateur Windows (Inno Setup)
 
 ```powershell
 npm run installer:win
@@ -66,7 +91,6 @@ Produit : `installer/output/TabernacleERP-Setup-1.3.1.exe`
 
 ## Roadmap
 
-- Application Tauri native
 - JWT / OAuth2
 - Sync multi-entités étendue (enveloppes, taux…)
 - Modules hors finance

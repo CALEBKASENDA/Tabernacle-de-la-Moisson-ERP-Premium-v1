@@ -12,6 +12,8 @@
     "api:start": "npm run start -w @tabernacle/erp-premium-api",
     "desktop:dev": "npm run dev -w @tabernacle/erp-premium-desktop",
     "desktop:build": "npm run build -w @tabernacle/erp-premium-desktop",
+    "desktop:native:dev": "npm run tauri:dev -w @tabernacle/erp-premium-desktop",
+    "desktop:native:build": "npm run tauri:build -w @tabernacle/erp-premium-desktop",
     "build:all": "npm run build -w @tabernacle/erp-premium-domain && npm run build -w @tabernacle/erp-premium-db && npm run build -w @tabernacle/erp-premium-api && npm run build -w @tabernacle/erp-premium-desktop",
     "start:prod": "npm run build:all && node scripts/start-prod.mjs",
     "docker:build": "docker compose build",
