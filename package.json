@@ -25,7 +25,11 @@
     "installer:win": "powershell -NoProfile -ExecutionPolicy Bypass -File installer/build-windows.ps1",
     "test:smoke": "npm run build -w @tabernacle/erp-premium-db && npm run build -w @tabernacle/erp-premium-api && node apps/api/scripts/smoke-finance.mjs",
     "test:domain": "npm run build -w @tabernacle/erp-premium-domain && node --test scripts/test-closure.mjs scripts/test-alerts.mjs",
-    "test:all": "npm run typecheck && npm run test:domain"
+    "test:all": "npm run typecheck && npm run test:domain",
+    "donnees:restaurer-projet": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/restaurer-donnees-projet.ps1",
+    "donnees:backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-donnees.ps1",
+    "donnees:push-github": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-donnees-github.ps1",
+    "donnees:pull-github": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pull-donnees-github.ps1"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

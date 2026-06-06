@@ -81,6 +81,31 @@ Installateur généré : `apps/desktop/src-tauri/target/release/bundle/`
 
 Données natives Tauri : `%APPDATA%\com.tabernacle.moisson.erp\data\`
 
+## Données en ligne sur GitHub (dépôt privé séparé)
+
+Le **code** et les **données** sont sur GitHub, mais dans **2 dépôts différents** :
+
+| Dépôt | Contenu |
+|-------|---------|
+| [Tabernacle-de-la-Moisson-ERP-Premium-v1](https://github.com/CALEBKASENDA/Tabernacle-de-la-Moisson-ERP-Premium-v1) | Code source |
+| **Tabernacle-de-la-Moisson-ERP-Donnees** (privé) | `data\`, `config\.env` |
+
+**Envoyer vos données en ligne** (après avoir utilisé l'ERP) :
+
+```powershell
+npm run donnees:push-github
+```
+
+**Récupérer sur un autre PC** (après `git clone` du code) :
+
+```powershell
+npm run donnees:pull-github
+npm install
+npm run dev
+```
+
+> Les données restent **hors du dépôt code** (`.gitignore`) pour éviter les accidents, mais sont **copiées** vers le dépôt privé `Donnees`. Gardez ce dépôt **strictement privé** (mots de passe, opérations financières).
+
 ## Installateur Windows (Inno Setup)
 
 ```powershell
