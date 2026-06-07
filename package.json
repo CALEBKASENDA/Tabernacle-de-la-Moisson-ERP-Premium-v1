@@ -29,7 +29,8 @@
     "donnees:restaurer-projet": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/restaurer-donnees-projet.ps1",
     "donnees:backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-donnees.ps1",
     "donnees:push-github": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-donnees-github.ps1",
-    "donnees:pull-github": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pull-donnees-github.ps1"
+    "donnees:pull-github": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pull-donnees-github.ps1",
+    "github:sync": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-github-complet.ps1"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

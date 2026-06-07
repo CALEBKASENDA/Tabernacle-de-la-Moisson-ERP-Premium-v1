@@ -81,30 +81,29 @@ Installateur généré : `apps/desktop/src-tauri/target/release/bundle/`
 
 Données natives Tauri : `%APPDATA%\com.tabernacle.moisson.erp\data\`
 
-## Données en ligne sur GitHub (dépôt privé séparé)
-
-Le **code** et les **données** sont sur GitHub, mais dans **2 dépôts différents** :
+## GitHub (2 dépôts privés)
 
 | Dépôt | Contenu |
 |-------|---------|
-| [Tabernacle-de-la-Moisson-ERP-Premium-v1](https://github.com/CALEBKASENDA/Tabernacle-de-la-Moisson-ERP-Premium-v1) | Code source |
-| **Tabernacle-de-la-Moisson-ERP-Donnees** (privé) | `data\`, `config\.env` |
+| [Tab.-de-la-Moisson-ERP-Premium-v1.3.1](https://github.com/CALEBKASENDA/Tab.-de-la-Moisson-ERP-Premium-v1.3.1) | Code + données + [installateurs (Releases)](https://github.com/CALEBKASENDA/Tab.-de-la-Moisson-ERP-Premium-v1.3.1/releases) |
+| [Tabernacle-de-la-Moisson-ERP-Donnees](https://github.com/CALEBKASENDA/Tabernacle-de-la-Moisson-ERP-Donnees) | Copie `data\`, `config\.env` |
 
-**Envoyer vos données en ligne** (après avoir utilisé l'ERP) :
+**Synchroniser tout en ligne** (après avoir utilisé l'ERP) :
 
 ```powershell
-npm run donnees:push-github
+npm run github:sync
 ```
 
-**Récupérer sur un autre PC** (après `git clone` du code) :
+**Récupérer sur un autre PC** :
 
 ```powershell
-npm run donnees:pull-github
+git clone https://github.com/CALEBKASENDA/Tab.-de-la-Moisson-ERP-Premium-v1.3.1.git
+cd Tab.-de-la-Moisson-ERP-Premium-v1.3.1
 npm install
 npm run dev
 ```
 
-> Les données restent **hors du dépôt code** (`.gitignore`) pour éviter les accidents, mais sont **copiées** vers le dépôt privé `Donnees`. Gardez ce dépôt **strictement privé** (mots de passe, opérations financières).
+> Gardez les deux dépôts **strictement privés** (mots de passe, opérations financières). L'ancien dépôt `Tabernacle-de-la-Moisson-ERP-Premium-v1` est archivé — utilisez **v1.3.1**.
 
 ## Installateur Windows (Inno Setup)
 
