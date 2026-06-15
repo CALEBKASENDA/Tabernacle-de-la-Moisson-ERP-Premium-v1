@@ -19,12 +19,15 @@ const HOST = process.env.HOST ?? (process.env.WEB_DIST_DIR ? '0.0.0.0' : '127.0.
 async function main(): Promise<void> {
   installBigIntJsonSupport();
   loadEnv();
+  const isInstalled = Boolean(process.env.TABERNACLE_INSTALL_ROOT);
+
   initAppContext();
-  startAutoBackupScheduler();
 
   const app = Fastify({
-    logger: true,
+    logger: isInstalled ? false : true,
     trustProxy: true,
+    connectionTimeout: 10_000,
+    keepAliveTimeout: 5_000,
   });
 
   app.addHook('preSerialization', async (_request, _reply, payload) => sanitizeForJson(payload));
@@ -95,6 +98,11 @@ async function main(): Promise<void> {
   });
 
   await app.listen({ port: PORT, host: HOST });
+  if (isInstalled) {
+    setImmediate(() => startAutoBackupScheduler());
+  } else {
+    startAutoBackupScheduler();
+  }
   console.log(`Tabernacle Finance API: http://${HOST}:${PORT}/api/v1`);
 }
 

@@ -1,4 +1,4 @@
 @echo off
-REM Lanceur sans console — fallback si le raccourci Bureau est casse
-powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0start-tabernacle.ps1"
+REM Lanceur silencieux — VBS (sans console)
+wscript.exe //B "%~dp0Launch-Tabernacle.vbs"
 exit /b %errorlevel%

@@ -136,6 +136,7 @@ if (Test-Path $projectEnv) {
     Copy-Item $projectEnv (Join-Path $Staging 'config\.env') -Force
 }
 Copy-Item (Join-Path $InstallerDir 'assets\tabernacle.ico') (Join-Path $Staging 'assets\tabernacle.ico') -Force
+Copy-Item (Join-Path $InstallerDir 'assets\boot.html') (Join-Path $Staging 'assets\boot.html') -Force
 
 Write-Step "Telechargement Node.js $NodeVersion (Windows x64)..."
 New-Item -ItemType Directory -Force -Path $Cache | Out-Null

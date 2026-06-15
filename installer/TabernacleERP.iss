@@ -2,7 +2,7 @@
 ; Compiler : ISCC.exe TabernacleERP.iss  (ou npm run installer:win)
 
 #define MyAppName "Tabernacle de la Moisson ERP"
-#define MyAppVersion "1.5.1"
+#define MyAppVersion "1.5.2"
 #define MyAppPublisher "Tabernacle de la Moisson"
 #define MyAppURL "https://github.com/tabernacle-moisson/erp"
 #define MyAppExeNameDebug "Launch-Tabernacle.cmd"
@@ -46,20 +46,21 @@ Source: "{#StagingDir}\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recurs
 Source: "{#StagingDir}\scripts\*"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "{#StagingDir}\config\*"; DestDir: "{app}\config"; Flags: ignoreversion
 Source: "assets\tabernacle.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
+Source: "assets\boot.html"; DestDir: "{app}\assets"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start-tabernacle.ps1"""; IconFilename: "{app}\assets\tabernacle.ico"; WorkingDir: "{app}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\scripts\Launch-Tabernacle.vbs"; IconFilename: "{app}\assets\tabernacle.ico"; WorkingDir: "{app}"
 Name: "{group}\{#MyAppName} (mode debug)"; Filename: "{app}\scripts\{#MyAppExeNameDebug}"; IconFilename: "{app}\assets\tabernacle.ico"; WorkingDir: "{app}"
 Name: "{group}\Arrêter {#MyAppName}"; Filename: "{app}\scripts\Stop-Tabernacle.cmd"; WorkingDir: "{app}"
 Name: "{group}\Exporter vers cle USB"; Filename: "{app}\scripts\Export-Portable.cmd"; IconFilename: "{app}\assets\tabernacle.ico"; WorkingDir: "{app}"
 Name: "{group}\Importer depuis cle USB"; Filename: "{app}\scripts\Import-Portable.cmd"; IconFilename: "{app}\assets\tabernacle.ico"; WorkingDir: "{app}"
 Name: "{group}\Ouvrir le dossier de données"; Filename: "explorer.exe"; Parameters: "{code:GetDataDir}"
 Name: "{group}\Modifier la configuration"; Filename: "notepad.exe"; Parameters: "{code:GetEnvFile}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start-tabernacle.ps1"""; IconFilename: "{app}\assets\tabernacle.ico"; Tasks: desktopicon; WorkingDir: "{app}"
-Name: "{userstartup}\{#MyAppName}"; Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start-tabernacle.ps1"""; IconFilename: "{app}\assets\tabernacle.ico"; Tasks: startupicon; WorkingDir: "{app}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\scripts\Launch-Tabernacle.vbs"; IconFilename: "{app}\assets\tabernacle.ico"; Tasks: desktopicon; WorkingDir: "{app}"
+Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\scripts\Launch-Tabernacle.vbs"; IconFilename: "{app}\assets\tabernacle.ico"; Tasks: startupicon; WorkingDir: "{app}"
 
 [Run]
-Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start-tabernacle.ps1"""; Description: "Lancer {#MyAppName} maintenant"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\scripts\Launch-Tabernacle.vbs"; Description: "Lancer {#MyAppName} maintenant"; Flags: postinstall nowait skipifsilent shellexec
 
 [UninstallRun]
 Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\stop-tabernacle.ps1"""; Flags: runhidden
