@@ -79,6 +79,17 @@ Copy-Tree (Join-Path $Root 'node_modules') (Join-Path $appDest 'node_modules')
 $apiDataStaging = Join-Path $appDest 'apps\api\data'
 if (Test-Path $apiDataStaging) { Remove-Item $apiDataStaging -Recurse -Force }
 
+Write-Step 'Exclusion des artefacts inutiles (Tauri, mobile, caches)...'
+@(
+    (Join-Path $appDest 'apps\mobile'),
+    (Join-Path $appDest 'apps\desktop\src-tauri\target'),
+    (Join-Path $appDest 'apps\desktop\src-tauri\resources'),
+    (Join-Path $appDest 'apps\desktop\src-tauri\gen'),
+    (Join-Path $appDest 'apps\desktop\node_modules\.vite')
+) | ForEach-Object {
+    if (Test-Path $_) { Remove-Item $_ -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
 Write-Step 'Nettoyage des sources TypeScript...'
 @(
     (Join-Path $appDest 'apps\api\src'),
@@ -125,10 +136,17 @@ if (-not $PortableOnly) {
     if ($iscc) {
         Write-Step 'Compilation Inno Setup...'
         & $iscc "/DStagingDir=$stagingDirName" (Join-Path $InstallerDir 'TabernacleERP.iss')
-        $setupExe = Get-ChildItem $Output -Filter 'TabernacleERP-Setup-*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($LASTEXITCODE -ne 0) {
+            throw "Compilation Inno Setup echouee ($LASTEXITCODE). Verifiez l installation Inno Setup 6."
+        }
+        $setupExe = Get-ChildItem $Output -Filter 'TabernacleERP-Setup-*.exe' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
         if ($setupExe) {
             Write-Host ''
             Write-Host "Installeur cree : $($setupExe.FullName)" -ForegroundColor Green
+        } else {
+            throw 'Aucun installeur TabernacleERP-Setup-*.exe dans output/.'
         }
     } else {
         Write-Host ''
