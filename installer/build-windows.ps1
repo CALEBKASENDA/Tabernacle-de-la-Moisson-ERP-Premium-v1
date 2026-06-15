@@ -35,9 +35,11 @@ if (-not $SkipBuild) {
     Write-Step 'Compilation de l application...'
     Push-Location $Root
     try {
-        npm ci
+        # npm ci / prune break npm workspaces (workspace:*); install + build only.
+        npm install
+        if ($LASTEXITCODE -ne 0) { throw "npm install a echoue ($LASTEXITCODE)" }
         npm run build:all
-        npm prune --omit=dev
+        if ($LASTEXITCODE -ne 0) { throw "build:all a echoue ($LASTEXITCODE)" }
     } finally {
         Pop-Location
     }
