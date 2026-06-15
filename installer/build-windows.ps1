@@ -20,12 +20,31 @@ function Write-Step($msg) {
     Write-Host "==> $msg" -ForegroundColor Cyan
 }
 
-function Copy-Tree($src, $dest) {
+function Copy-Tree($src, $dest, [string[]]$ExcludeDirs = @()) {
     if (-not (Test-Path $src)) { return }
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
-    & robocopy $src $dest /E /XJ /R:2 /W:2 /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+    $xd = @()
+  foreach ($name in $ExcludeDirs) { if ($name) { $xd += "/XD"; $xd += $name } }
+    & robocopy $src $dest /E /XJ /R:2 /W:2 /NFL /NDL /NJH /NJS /NC /NS /NP @xd | Out-Null
     if ($LASTEXITCODE -ge 8) {
         throw "Copie echouee ($LASTEXITCODE): $src -> $dest"
+    }
+}
+
+function Test-StagingReady($stagingRoot) {
+    $required = @(
+        (Join-Path $stagingRoot 'node\node.exe'),
+        (Join-Path $stagingRoot 'scripts\start-tabernacle.ps1'),
+        (Join-Path $stagingRoot 'app\apps\api\dist\server.js'),
+        (Join-Path $stagingRoot 'app\apps\desktop\dist\index.html'),
+        (Join-Path $stagingRoot 'app\packages\db\dist\index.js'),
+        (Join-Path $stagingRoot 'app\packages\domain\dist\index.js'),
+        (Join-Path $stagingRoot 'app\node_modules\better-sqlite3'),
+        (Join-Path $stagingRoot 'app\node_modules\fastify')
+    )
+    $missing = $required | Where-Object { -not (Test-Path $_) }
+    if ($missing) {
+        throw "Staging incomplet. Fichiers manquants:`n$($missing -join "`n")"
     }
 }
 
@@ -51,16 +70,10 @@ Write-Step 'Icone application...'
 Write-Step 'Preparation du dossier staging...'
 $stagingDirName = 'staging'
 $Staging = Join-Path $InstallerDir $stagingDirName
-if (Test-Path $Staging) {
-    try {
-        Remove-Item $Staging -Recurse -Force -ErrorAction Stop
-    } catch {
-        $stagingDirName = 'staging_work'
-        $Staging = Join-Path $InstallerDir $stagingDirName
-        Write-Host "Dossier staging verrouille - utilisation de $stagingDirName" -ForegroundColor Yellow
-        if (Test-Path $Staging) {
-            Remove-Item $Staging -Recurse -Force -ErrorAction SilentlyContinue
-        }
+foreach ($dirName in @('staging', 'staging_work')) {
+    $dirPath = Join-Path $InstallerDir $dirName
+    if (Test-Path $dirPath) {
+        Remove-Item $dirPath -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 @('node', 'app', 'scripts', 'config', 'assets', 'data') | ForEach-Object {
@@ -73,8 +86,19 @@ Copy-Item (Join-Path $Root 'package.json') $appDest
 Copy-Item (Join-Path $Root 'package-lock.json') $appDest
 Copy-Item (Join-Path $Root 'tsconfig.base.json') $appDest
 Copy-Tree (Join-Path $Root 'packages') (Join-Path $appDest 'packages')
-Copy-Tree (Join-Path $Root 'apps') (Join-Path $appDest 'apps')
-Copy-Tree (Join-Path $Root 'node_modules') (Join-Path $appDest 'node_modules')
+Copy-Tree (Join-Path $Root 'apps') (Join-Path $appDest 'apps') @(
+    'mobile',
+    'src-tauri\target',
+    'src-tauri\resources',
+    'src-tauri\gen'
+)
+$nodeExclude = @(
+    '.cache', '.vite', '@vitejs', 'vite', 'typescript', '@types', '@babel',
+    'esbuild', '@esbuild', 'eslint', 'prettier', 'rollup', '@rollup',
+    'lightningcss', 'postcss', 'tailwindcss', 'react-refresh', 'expo',
+    '@expo', 'react-native', '@react-native', 'metro', '@react-native-community'
+)
+Copy-Tree (Join-Path $Root 'node_modules') (Join-Path $appDest 'node_modules') $nodeExclude
 
 $apiDataStaging = Join-Path $appDest 'apps\api\data'
 if (Test-Path $apiDataStaging) { Remove-Item $apiDataStaging -Recurse -Force }
@@ -122,6 +146,9 @@ if (-not (Test-Path $nodeCache)) {
     Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeCache -UseBasicParsing
 }
 Copy-Item $nodeCache $nodeDest -Force
+
+Write-Step 'Validation du staging...'
+Test-StagingReady $Staging
 
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
 

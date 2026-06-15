@@ -2,7 +2,7 @@
 ; Compiler : ISCC.exe TabernacleERP.iss  (ou npm run installer:win)
 
 #define MyAppName "Tabernacle de la Moisson ERP"
-#define MyAppVersion "1.5.0"
+#define MyAppVersion "1.5.1"
 #define MyAppPublisher "Tabernacle de la Moisson"
 #define MyAppURL "https://github.com/tabernacle-moisson/erp"
 #define MyAppExeNameDebug "Launch-Tabernacle.cmd"
@@ -20,8 +20,8 @@ DisableProgramGroupPage=yes
 OutputDir=output
 OutputBaseFilename=TabernacleERP-Setup-{#MyAppVersion}
 SetupIconFile=assets\tabernacle.ico
-Compression=lzma2/ultra64
-SolidCompression=yes
+Compression=lzma2/max
+SolidCompression=no
 WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
