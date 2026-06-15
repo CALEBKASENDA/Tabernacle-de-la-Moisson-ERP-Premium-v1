@@ -21,7 +21,6 @@ const pidFile = path.join(configDir, 'tabernacle.pid');
 const logOut = path.join(logsDir, 'tabernacle.log');
 const logErr = path.join(logsDir, 'tabernacle-error.log');
 const apiCwd = path.join(installRoot, 'app', 'apps', 'api');
-const bootHtml = path.join(installRoot, 'assets', 'boot.html');
 const PORT = 3847;
 
 function ensureDir(dir) {
@@ -57,12 +56,17 @@ function openPath(target) {
   execFile('cmd.exe', ['/c', 'start', '', target], { windowsHide: true });
 }
 
-function openBootOrApp() {
-  if (fs.existsSync(bootHtml)) {
-    openPath(bootHtml);
-    return;
-  }
+function openApp() {
   openPath(`http://127.0.0.1:${PORT}/`);
+}
+
+async function waitForPort(port, maxMs = 8000) {
+  const step = 80;
+  for (let elapsed = 0; elapsed < maxMs; elapsed += step) {
+    if (await isPortOpen(port)) return true;
+    await new Promise((r) => setTimeout(r, step));
+  }
+  return false;
 }
 
 function ensureEnvFile() {
@@ -135,7 +139,7 @@ function startServer() {
       WEB_DIST_DIR: webDist,
       HOST: '127.0.0.1',
       PORT: String(PORT),
-      TABERNACLE_APP_VERSION: '1.5.2',
+      TABERNACLE_APP_VERSION: '1.5.3',
       NODE_ENV: 'production',
     },
   });
@@ -158,19 +162,20 @@ async function main() {
   if (fs.existsSync(pidFile)) {
     const oldPid = Number(fs.readFileSync(pidFile, 'utf8').trim());
     if (isPidAlive(oldPid) || (await isPortOpen(PORT))) {
-      openBootOrApp();
+      openApp();
       return;
     }
     try { fs.unlinkSync(pidFile); } catch { /* ignore */ }
   }
 
   if (await isPortOpen(PORT)) {
-    openBootOrApp();
+    openApp();
     return;
   }
 
-  openBootOrApp();
   startServer();
+  await waitForPort(PORT);
+  openApp();
 }
 
 main().catch((err) => {

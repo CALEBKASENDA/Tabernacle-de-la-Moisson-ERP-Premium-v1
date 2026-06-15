@@ -1,5 +1,6 @@
-import { loadEnv } from './loadEnv';
 import Fastify from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import { loadEnv } from './loadEnv';
 import cors from '@fastify/cors';
 import { initAppContext } from './appContext';
 import { startAutoBackupScheduler } from './autoBackup';
@@ -12,24 +13,12 @@ import { pastoralRoutes } from './routes/pastoral';
 import { oauthRoutes } from './routes/oauth';
 import { registerWebApp, registerDevLanding } from './serveWeb';
 import { installBigIntJsonSupport, sanitizeForJson } from './jsonSafe';
+import { SPLASH_HTML, getHealthPayload, isAppReady, setAppReady, setBootError } from './bootSplash';
 
 const PORT = Number(process.env.PORT ?? 3847);
 const HOST = process.env.HOST ?? (process.env.WEB_DIST_DIR ? '0.0.0.0' : '127.0.0.1');
 
-async function main(): Promise<void> {
-  installBigIntJsonSupport();
-  loadEnv();
-  const isInstalled = Boolean(process.env.TABERNACLE_INSTALL_ROOT);
-
-  initAppContext();
-
-  const app = Fastify({
-    logger: isInstalled ? false : true,
-    trustProxy: true,
-    connectionTimeout: 10_000,
-    keepAliveTimeout: 5_000,
-  });
-
+async function registerApiAndWeb(app: FastifyInstance): Promise<void> {
   app.addHook('preSerialization', async (_request, _reply, payload) => sanitizeForJson(payload));
 
   await app.register(cors, {
@@ -45,8 +34,6 @@ async function main(): Promise<void> {
       'x-site-id',
     ],
   });
-
-  app.get('/health', async () => ({ status: 'ok', service: 'tabernacle-finance-api' }));
 
   await app.register(authRoutes, { prefix: '/api/v1' });
   await app.register(systemRoutes, { prefix: '/api/v1' });
@@ -96,14 +83,53 @@ async function main(): Promise<void> {
 
     reply.status(status).send({ error: message });
   });
+}
+
+async function main(): Promise<void> {
+  installBigIntJsonSupport();
+  loadEnv();
+  const isInstalled = Boolean(process.env.TABERNACLE_INSTALL_ROOT);
+
+  const app = Fastify({
+    logger: isInstalled ? false : true,
+    trustProxy: true,
+    connectionTimeout: 10_000,
+    keepAliveTimeout: 5_000,
+  });
+
+  app.addHook('onRequest', async (req, reply) => {
+    if (isAppReady()) return;
+    const urlPath = req.url.split('?')[0] ?? '/';
+    if (urlPath === '/health') return;
+    if (urlPath.startsWith('/api/')) {
+      reply.status(503).send({ error: 'Démarrage en cours…', retry: true, mode: 'hybrid-local-first' });
+      return;
+    }
+    reply.type('text/html; charset=utf-8').send(SPLASH_HTML);
+  });
+
+  app.get('/health', async () => getHealthPayload());
 
   await app.listen({ port: PORT, host: HOST });
-  if (isInstalled) {
-    setImmediate(() => startAutoBackupScheduler());
-  } else {
-    startAutoBackupScheduler();
+
+  try {
+    initAppContext();
+    await registerApiAndWeb(app);
+    setAppReady();
+    if (isInstalled) {
+      setImmediate(() => startAutoBackupScheduler());
+    } else {
+      startAutoBackupScheduler();
+    }
+    console.log(`Tabernacle Finance API: http://${HOST}:${PORT}/api/v1`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    setBootError(message);
+    console.error(err);
+    if (isInstalled) {
+      console.error('[Tabernacle] Echec initialisation — consultez config/logs/tabernacle-error.log');
+    }
   }
-  console.log(`Tabernacle Finance API: http://${HOST}:${PORT}/api/v1`);
 }
 
 main().catch((err) => {

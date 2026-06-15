@@ -1,6 +1,6 @@
 # Tabernacle de la Moisson ERP Premium
 
-ERP professionnel multi-églises, **Desktop First**, **Local First**, module **Gestion Financière** complet (**v1.5.2**).
+ERP professionnel multi-églises, **hybride Local First** (hors-ligne + sync cloud optionnelle), module **Gestion Financière** complet (**v1.5.3**).
 
 ## Architecture
 
@@ -113,7 +113,7 @@ npm run dev
 npm run installer:win
 ```
 
-Produit : `installer/output/TabernacleERP-Setup-1.5.2.exe`
+Produit : `installer/output/TabernacleERP-Setup-1.5.3.exe`
 
 ## Application mobile (Expo)
 
