@@ -9,7 +9,8 @@ data/
 apps/desktop/dist/
 installer/staging/
 installer/staging_work/
-installer/output/
+installer/output/*
+!installer/output/TabernacleERP-Setup-1.5.1.exe
 installer/cache/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/resources/app/
