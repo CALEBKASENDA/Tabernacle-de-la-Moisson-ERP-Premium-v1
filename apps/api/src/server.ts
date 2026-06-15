@@ -8,6 +8,8 @@ import { authRoutes } from './routes/auth';
 import { adminRoutes } from './routes/admin';
 import { systemRoutes } from './routes/system';
 import { syncRoutes } from './routes/sync';
+import { pastoralRoutes } from './routes/pastoral';
+import { oauthRoutes } from './routes/oauth';
 import { registerWebApp, registerDevLanding } from './serveWeb';
 import { installBigIntJsonSupport, sanitizeForJson } from './jsonSafe';
 
@@ -32,6 +34,7 @@ async function main(): Promise<void> {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
+      'Authorization',
       'x-church-id',
       'x-user-id',
       'x-session-id',
@@ -47,6 +50,8 @@ async function main(): Promise<void> {
   await app.register(syncRoutes, { prefix: '/api/v1' });
   await app.register(adminRoutes, { prefix: '/api/v1' });
   await app.register(financeRoutes, { prefix: '/api/v1' });
+  await app.register(oauthRoutes, { prefix: '/api/v1' });
+  await app.register(pastoralRoutes, { prefix: '/api/v1' });
 
   const webServed = await registerWebApp(app);
   if (!webServed) {

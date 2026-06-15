@@ -28,6 +28,11 @@ import { Users } from './pages/Users';
 import { Security } from './pages/Security';
 import { Cloud } from './pages/Cloud';
 import { Help } from './pages/Help';
+import { Members } from './pages/Members';
+import { Cells } from './pages/Cells';
+import { Visits } from './pages/Visits';
+import { Trainings } from './pages/Trainings';
+import { OAuthCallback } from './pages/OAuthCallback';
 
 export function App() {
   return (
@@ -35,10 +40,23 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route element={<PermissionRoute perms={['finance:reports:voir', 'finance:operations:voir']} />}>
                 <Route index element={<Dashboard />} />
+              </Route>
+              <Route element={<PermissionRoute perm="pastoral:members:voir" />}>
+                <Route path="membres" element={<Members />} />
+              </Route>
+              <Route element={<PermissionRoute perm="pastoral:cells:voir" />}>
+                <Route path="cellules" element={<Cells />} />
+              </Route>
+              <Route element={<PermissionRoute perm="pastoral:visits:voir" />}>
+                <Route path="visites" element={<Visits />} />
+              </Route>
+              <Route element={<PermissionRoute perm="pastoral:trainings:voir" />}>
+                <Route path="formations" element={<Trainings />} />
               </Route>
               <Route element={<PermissionRoute perm="finance:reports:voir" />}>
                 <Route path="pastoral" element={<PastoralDashboard />} />

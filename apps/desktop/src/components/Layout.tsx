@@ -18,6 +18,15 @@ type NavItem = {
 
 const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
   {
+    title: 'Pastoral',
+    items: [
+      { to: '/membres', label: 'Membres', icon: 'users', perm: 'pastoral:members:voir' },
+      { to: '/cellules', label: 'Cellules', icon: 'church', perm: 'pastoral:cells:voir' },
+      { to: '/visites', label: 'Visites', icon: 'ops', perm: 'pastoral:visits:voir' },
+      { to: '/formations', label: 'Formations', icon: 'report', perm: 'pastoral:trainings:voir' },
+    ],
+  },
+  {
     title: 'Pilotage',
     items: [
       { to: '/', label: 'Tableau de bord', icon: 'dash', perms: ['finance:reports:voir', 'finance:operations:voir'] },

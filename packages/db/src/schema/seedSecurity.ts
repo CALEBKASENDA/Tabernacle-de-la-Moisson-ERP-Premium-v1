@@ -25,6 +25,14 @@ export const PERMISSION_CODES = [
   'admin:churches:administrer',
   'admin:users:administrer',
   'admin:security:administrer',
+  'pastoral:members:voir',
+  'pastoral:members:modifier',
+  'pastoral:cells:voir',
+  'pastoral:cells:modifier',
+  'pastoral:visits:voir',
+  'pastoral:visits:modifier',
+  'pastoral:trainings:voir',
+  'pastoral:trainings:modifier',
 ] as const;
 
 const ROLE_PERMISSIONS: Record<(typeof SYSTEM_ROLES)[number], readonly string[]> = {
@@ -39,16 +47,33 @@ const ROLE_PERMISSIONS: Record<(typeof SYSTEM_ROLES)[number], readonly string[]>
     'finance:exchange-rates:modifier',
     'finance:reports:voir',
     'admin:users:administrer',
+    'pastoral:members:voir',
+    'pastoral:members:modifier',
+    'pastoral:cells:voir',
+    'pastoral:cells:modifier',
+    'pastoral:visits:voir',
+    'pastoral:visits:modifier',
+    'pastoral:trainings:voir',
+    'pastoral:trainings:modifier',
   ],
   ACCOUNTANT: [
     'finance:operations:voir',
     'finance:operations:ajouter',
     'finance:operations:modifier',
     'finance:reports:voir',
+    'pastoral:members:voir',
+    'pastoral:visits:voir',
   ],
   DATA_ENTRY_OPERATOR: ['finance:operations:voir', 'finance:operations:ajouter'],
   AUDITOR: ['finance:operations:voir', 'finance:reports:voir', 'finance:audit:voir'],
-  READ_ONLY: ['finance:operations:voir', 'finance:reports:voir'],
+  READ_ONLY: [
+    'finance:operations:voir',
+    'finance:reports:voir',
+    'pastoral:members:voir',
+    'pastoral:cells:voir',
+    'pastoral:visits:voir',
+    'pastoral:trainings:voir',
+  ],
 };
 
 function resolveBootstrapAccounts(): Array<{ email: string; fullName: string; password: string }> {

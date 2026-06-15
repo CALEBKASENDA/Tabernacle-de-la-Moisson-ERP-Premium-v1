@@ -220,6 +220,158 @@ export class SecurityModule {
 
 
 
+  loginWithOAuth(params: {
+
+    email: string;
+
+    provider: string;
+
+    providerSubject: string;
+
+    churchId?: string;
+
+    workstationId?: string;
+
+  }): {
+
+    sessionId: string;
+
+    userId: string;
+
+    fullName: string;
+
+    email: string;
+
+    churchId: string;
+
+    churchName: string;
+
+    roles: string[];
+
+    permissions: string[];
+
+    fundsEnabled: boolean;
+
+  } {
+
+    const user = this.users.getByEmail(params.email.trim().toLowerCase());
+
+    if (!user || !user.is_active) {
+
+      throw new Error('Compte non provisionné — contactez l\'administrateur de l\'église');
+
+    }
+
+
+
+    const now = new Date().toISOString();
+
+    this.db.run(
+
+      `INSERT INTO oauth_identity (oauth_id, user_id, provider, provider_subject, email, created_at)
+
+       VALUES (@id, @user_id, @provider, @subject, @email, @now)
+
+       ON CONFLICT(provider, provider_subject) DO UPDATE SET email=@email`,
+
+      {
+
+        id: newId('oauth'),
+
+        user_id: user.user_id,
+
+        provider: params.provider,
+
+        subject: params.providerSubject,
+
+        email: params.email,
+
+        now,
+
+      }
+
+    );
+
+
+
+    const churches = this.users.getAccessibleChurches(user.user_id);
+
+    if (churches.length === 0) throw new Error('Aucune église associée à ce compte');
+
+
+
+    let church = churches[0]!;
+
+    if (params.churchId) {
+
+      const found = churches.find((c) => c.church_id === params.churchId);
+
+      if (!found) throw new Error('Accès refusé à cette église');
+
+      church = found;
+
+    }
+
+
+
+    const { roles, permissions } = this.resolveRolesAndPermissions(church.church_id, user.user_id);
+
+    const sessionId = newId('session');
+
+    const workstationId = params.workstationId ?? 'oauth';
+
+
+
+    this.db.run(
+
+      `INSERT INTO user_session (session_id, church_id, user_id, workstation_id, started_at)
+
+       VALUES (@session_id, @church_id, @user_id, @workstation_id, @now)`,
+
+      {
+
+        session_id: sessionId,
+
+        church_id: church.church_id,
+
+        user_id: user.user_id,
+
+        workstation_id: workstationId,
+
+        now,
+
+      }
+
+    );
+
+
+
+    return {
+
+      sessionId,
+
+      userId: user.user_id,
+
+      fullName: user.full_name,
+
+      email: user.email ?? params.email,
+
+      churchId: church.church_id,
+
+      churchName: church.name,
+
+      roles,
+
+      permissions,
+
+      fundsEnabled: this.churches.isFundsEnabled(church.church_id),
+
+    };
+
+  }
+
+
+
   validateSession(sessionId: string): {
 
     sessionId: string;

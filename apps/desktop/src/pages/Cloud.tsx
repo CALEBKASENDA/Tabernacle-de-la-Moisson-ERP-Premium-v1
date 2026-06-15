@@ -55,16 +55,18 @@ export function Cloud() {
   const [drives, setDrives] = useState<string[]>([]);
   const [selectedDrive, setSelectedDrive] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [conflicts, setConflicts] = useState<import('../api/client').SyncConflictEvent[]>([]);
   const [portableHistory, setPortableHistory] = useState<PortableExportLogEntry[]>([]);
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const [cloudRes, localRes, drivesRes, historyRes] = await Promise.all([
+      const [cloudRes, localRes, drivesRes, historyRes, conflictsRes] = await Promise.all([
         api.getCloudStatus(),
         api.getSystemLocal(),
         canConfigure ? api.getSystemDrives().catch(() => ({ data: [] as string[] })) : Promise.resolve({ data: [] as string[] }),
         canConfigure ? api.getPortableHistory().catch(() => ({ data: [] as PortableExportLogEntry[] })) : Promise.resolve({ data: [] as PortableExportLogEntry[] }),
+        canConfigure ? api.getSyncConflicts().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ]);
       setCloudData({
         ...cloudRes.data,
@@ -73,6 +75,7 @@ export function Cloud() {
       setDrives(drivesRes.data);
       if (drivesRes.data[0] && !selectedDrive) setSelectedDrive(drivesRes.data[0]);
       setPortableHistory(historyRes.data);
+      setConflicts(conflictsRes.data);
       setRemoteUrl(cloudRes.data.config.remoteUrl ?? '');
       setPublicLabel(cloudRes.data.config.publicLabel ?? '');
       setNotes(cloudRes.data.config.notes ?? '');
@@ -108,6 +111,31 @@ export function Cloud() {
       setError(err instanceof Error ? err.message : 'Sync échouée');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleRetryConflict = async (eventId: string) => {
+    setError('');
+    setSuccess('');
+    try {
+      const res = await api.retrySyncConflict(eventId);
+      if (!res.data.ok) {
+        setError(res.data.reason ?? 'Nouvelle tentative échouée');
+      } else {
+        setSuccess('Conflit résolu');
+        await load();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+    }
+  };
+
+  const handleDismissConflict = async (eventId: string) => {
+    try {
+      await api.dismissSyncConflict(eventId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
     }
   };
 
@@ -368,6 +396,46 @@ export function Cloud() {
           <button type="button" className="btn btn-primary" onClick={handleSyncPush} disabled={syncing}>
             {syncing ? 'Synchronisation…' : 'Synchroniser maintenant'}
           </button>
+          {(cloudData?.syncConflicts ?? 0) > 0 && (
+            <p style={{ color: 'var(--warning, #b45309)', marginTop: '0.75rem', fontSize: '0.9rem' }}>
+              {cloudData?.syncConflicts} conflit(s) de synchronisation à traiter ci-dessous.
+            </p>
+          )}
+        </div>
+      )}
+
+      {!isCloudServer && canConfigure && conflicts.length > 0 && (
+        <div className="panel" style={{ marginBottom: '1.5rem' }}>
+          <h3>Conflits de synchronisation</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Opération</th>
+                <th>Entité</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {conflicts.map((c) => (
+                <tr key={c.event_id}>
+                  <td>{new Date(c.created_at).toLocaleString('fr-FR')}</td>
+                  <td>{c.entity_type}</td>
+                  <td>{c.operation}</td>
+                  <td><code>{c.entity_id.slice(0, 12)}…</code></td>
+                  <td>
+                    <button type="button" className="btn btn-ghost" onClick={() => handleRetryConflict(c.event_id)}>
+                      Réessayer
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => handleDismissConflict(c.event_id)}>
+                      Ignorer
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

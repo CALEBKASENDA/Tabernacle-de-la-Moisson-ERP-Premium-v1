@@ -1,8 +1,9 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { APP_NAME } from '../constants/branding';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHorloge } from '../hooks/useHorloge';
+import { api } from '../api/client';
 
 const COURRIEL_KEY = 'tabernacle_dernier_courriel';
 
@@ -12,7 +13,12 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [oauthProviders, setOauthProviders] = useState<string[]>([]);
   const horloge = useHorloge();
+
+  useEffect(() => {
+    api.getOAuthProviders().then((r) => setOauthProviders(r.data)).catch(() => setOauthProviders([]));
+  }, []);
 
   if (!loading && user) return <Navigate to="/" replace />;
 
@@ -28,6 +34,11 @@ export function Login() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const startOAuth = (provider: string) => {
+    const returnUrl = `${window.location.origin}/oauth/callback`;
+    window.location.href = `/api/v1/oauth/${provider}/start?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   return (
@@ -70,6 +81,23 @@ export function Login() {
             {submitting ? 'Authentification…' : 'Accéder à l\'espace financier'}
           </button>
         </form>
+
+        {oauthProviders.length > 0 && (
+          <div className="oauth-buttons" style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--muted)', textAlign: 'center' }}>Ou connectez-vous avec</p>
+            {oauthProviders.includes('google') && (
+              <button type="button" className="btn btn-ghost btn-block" onClick={() => startOAuth('google')}>
+                Google
+              </button>
+            )}
+            {oauthProviders.includes('microsoft') && (
+              <button type="button" className="btn btn-ghost btn-block" onClick={() => startOAuth('microsoft')}>
+                Microsoft
+              </button>
+            )}
+          </div>
+        )}
+
         <p className="login-hint">
           Mode local-first — données sur cet ordinateur. Connexion chiffrée, accès réservé aux utilisateurs autorisés.
         </p>

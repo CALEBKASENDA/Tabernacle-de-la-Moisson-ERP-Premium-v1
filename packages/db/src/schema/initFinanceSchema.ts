@@ -6,10 +6,14 @@ import { migrateUsdDirectColumns } from './migrateUsdDirectColumns';
 import { migrateUserPermission } from './migrateUserPermission';
 import { migrateChurchFundsEnabled } from './migrateChurchFundsEnabled';
 import { migrateBankReconciliationMatch } from './migrateBankReconciliationMatch';
+import { migrateMembers } from './migrateMembers';
+import { migratePastoralExtended } from './migratePastoralExtended';
 import { registerMigration, runVersionedMigrations } from './migrateSchemaVersion';
 import { newId, DEFAULT_CURRENCIES, DEFAULT_FINANCE_CATEGORIES, DEFAULT_FUNDS } from '@tabernacle/erp-premium-domain';
 
 registerMigration(1, 'bank_reconciliation_match', migrateBankReconciliationMatch);
+registerMigration(2, 'church_member', migrateMembers);
+registerMigration(3, 'pastoral_extended_oauth', migratePastoralExtended);
 
 export function ensureFinanceSchema(db: SqliteDatabase): void {
   db.exec(FINANCE_FULL_SCHEMA_SQL);

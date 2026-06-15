@@ -52,7 +52,16 @@ export class AuditRepository {
       }
     );
 
-    const payload = entry.newValueJson ?? entry.oldValueJson ?? '{}';
+    let payload = entry.newValueJson ?? entry.oldValueJson ?? '{}';
+    if (entry.metadataJson) {
+      try {
+        const body = JSON.parse(payload) as Record<string, unknown>;
+        body._meta = JSON.parse(entry.metadataJson);
+        payload = JSON.stringify(body);
+      } catch {
+        /* garde le payload d'origine */
+      }
+    }
     this.db.run(
       `INSERT INTO sync_event (event_id, church_id, entity_type, operation, entity_id, payload_json, created_at, sync_status)
        VALUES (@event_id, @church_id, @entity_type, @operation, @entity_id, @payload, @created_at, 'PENDING')`,
@@ -107,11 +116,49 @@ export class AuditRepository {
     this.db.run(`UPDATE sync_event SET sync_status='CONFLICT' WHERE event_id=@id`, { id: eventId });
   }
 
+  countSyncByStatus(status: string, churchId?: string): number {
+    const row = churchId
+      ? this.db.get<{ n: number }>(
+          `SELECT COUNT(*) AS n FROM sync_event WHERE sync_status=@status AND church_id=@church_id`,
+          { status, church_id: churchId }
+        )
+      : this.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM sync_event WHERE sync_status=@status`, { status });
+    return row?.n ?? 0;
+  }
+
+  listSyncEventsByStatus(status: string, limit = 100, churchId?: string): SyncEventRow[] {
+    return churchId
+      ? this.db.all<SyncEventRow>(
+          `SELECT * FROM sync_event WHERE sync_status=@status AND church_id=@church_id ORDER BY created_at DESC LIMIT @limit`,
+          { status, church_id: churchId, limit }
+        )
+      : this.db.all<SyncEventRow>(
+          `SELECT * FROM sync_event WHERE sync_status=@status ORDER BY created_at DESC LIMIT @limit`,
+          { status, limit }
+        );
+  }
+
+  dismissSyncConflict(eventId: string): boolean {
+    const row = this.db.get<{ event_id: string }>(
+      `SELECT event_id FROM sync_event WHERE event_id=@id AND sync_status='CONFLICT'`,
+      { id: eventId }
+    );
+    if (!row) return false;
+    this.db.run(`UPDATE sync_event SET sync_status='ACKED' WHERE event_id=@id`, { id: eventId });
+    return true;
+  }
+
+  getSyncEvent(eventId: string): SyncEventRow | null {
+    return this.db.get<SyncEventRow>(`SELECT * FROM sync_event WHERE event_id=@id`, { id: eventId }) ?? null;
+  }
+
   async ingestRemoteEvents(
     events: SyncEventIngestInput[],
     replay?: { apply: (ev: SyncEventIngestInput) => Promise<void> }
-  ): Promise<number> {
-    let n = 0;
+  ): Promise<{ accepted: number; conflicts: Array<{ eventId: string; reason: string }> }> {
+    let accepted = 0;
+    const conflicts: Array<{ eventId: string; reason: string }> = [];
+
     for (const ev of events) {
       const exists = this.db.get<{ event_id: string }>(
         `SELECT event_id FROM sync_event WHERE event_id=@id`,
@@ -123,7 +170,23 @@ export class AuditRepository {
         try {
           await replay.apply(ev);
         } catch (err) {
-          console.warn('[Tabernacle] Sync replay échoué:', ev.eventId, err);
+          const reason = err instanceof Error ? err.message : 'Replay échoué';
+          console.warn('[Tabernacle] Sync replay échoué:', ev.eventId, reason);
+          this.db.run(
+            `INSERT INTO sync_event (event_id, church_id, entity_type, operation, entity_id, payload_json, created_at, sync_status)
+             VALUES (@event_id, @church_id, @entity_type, @operation, @entity_id, @payload, @created_at, 'CONFLICT')`,
+            {
+              event_id: ev.eventId,
+              church_id: ev.churchId,
+              entity_type: ev.entityType,
+              operation: ev.operation,
+              entity_id: ev.entityId,
+              payload: ev.payloadJson,
+              created_at: ev.createdAt,
+            }
+          );
+          conflicts.push({ eventId: ev.eventId, reason });
+          continue;
         }
       }
 
@@ -140,9 +203,9 @@ export class AuditRepository {
           created_at: ev.createdAt,
         }
       );
-      n += 1;
+      accepted += 1;
     }
-    return n;
+    return { accepted, conflicts };
   }
 }
 

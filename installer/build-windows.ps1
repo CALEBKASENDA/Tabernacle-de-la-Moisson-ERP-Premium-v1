@@ -20,6 +20,15 @@ function Write-Step($msg) {
     Write-Host "==> $msg" -ForegroundColor Cyan
 }
 
+function Copy-Tree($src, $dest) {
+    if (-not (Test-Path $src)) { return }
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    & robocopy $src $dest /E /XJ /R:2 /W:2 /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) {
+        throw "Copie echouee ($LASTEXITCODE): $src -> $dest"
+    }
+}
+
 Write-Step 'Tabernacle ERP - build installeur Windows'
 
 if (-not $SkipBuild) {
@@ -61,9 +70,9 @@ $appDest = Join-Path $Staging 'app'
 Copy-Item (Join-Path $Root 'package.json') $appDest
 Copy-Item (Join-Path $Root 'package-lock.json') $appDest
 Copy-Item (Join-Path $Root 'tsconfig.base.json') $appDest
-Copy-Item (Join-Path $Root 'packages') (Join-Path $appDest 'packages') -Recurse
-Copy-Item (Join-Path $Root 'apps') (Join-Path $appDest 'apps') -Recurse
-Copy-Item (Join-Path $Root 'node_modules') (Join-Path $appDest 'node_modules') -Recurse
+Copy-Tree (Join-Path $Root 'packages') (Join-Path $appDest 'packages')
+Copy-Tree (Join-Path $Root 'apps') (Join-Path $appDest 'apps')
+Copy-Tree (Join-Path $Root 'node_modules') (Join-Path $appDest 'node_modules')
 
 $apiDataStaging = Join-Path $appDest 'apps\api\data'
 if (Test-Path $apiDataStaging) { Remove-Item $apiDataStaging -Recurse -Force }
@@ -85,6 +94,10 @@ Get-ChildItem $appDest -Recurse -Directory -Filter 'src' -ErrorAction SilentlyCo
 Write-Step 'Copie des scripts de lancement...'
 Copy-Item (Join-Path $InstallerDir 'scripts\*') (Join-Path $Staging 'scripts') -Recurse
 Copy-Item (Join-Path $InstallerDir 'config\*') (Join-Path $Staging 'config') -Recurse
+$projectEnv = Join-Path $Root 'config\.env'
+if (Test-Path $projectEnv) {
+    Copy-Item $projectEnv (Join-Path $Staging 'config\.env') -Force
+}
 Copy-Item (Join-Path $InstallerDir 'assets\tabernacle.ico') (Join-Path $Staging 'assets\tabernacle.ico') -Force
 
 Write-Step "Telechargement Node.js $NodeVersion (Windows x64)..."

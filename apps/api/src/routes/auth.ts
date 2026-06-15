@@ -1,12 +1,36 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { getAppContext } from '../appContext';
 import { requireAuth, type RequestWithAuth } from '../middleware/auth';
-import { clearLoginAttempts, rateLimitLogin } from '../middleware/rateLimit';
+import { rateLimitLogin, clearLoginAttempts } from '../middleware/rateLimit';
+import { signAccessToken } from '../jwt';
+
+function withAccessToken(data: {
+  sessionId: string;
+  userId: string;
+  email: string;
+  churchId: string;
+  [key: string]: unknown;
+}) {
+  return {
+    ...data,
+    accessToken: signAccessToken({
+      sub: data.userId,
+      sessionId: data.sessionId,
+      churchId: data.churchId,
+      email: data.email,
+    }),
+    tokenType: 'Bearer',
+    expiresIn: 60 * 60 * 24 * 7,
+  };
+}
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   const { security } = getAppContext();
 
-  app.post('/auth/login', { preHandler: rateLimitLogin }, async (req, reply) => {
+  const loginHandler = async (
+    req: FastifyRequest,
+    reply: FastifyReply
+  ) => {
     const body = req.body as { email: string; password: string; churchId?: string };
     try {
       const data = security.login({
@@ -15,7 +39,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         churchId: body.churchId,
       });
       clearLoginAttempts(req);
-      return { data };
+      return { data: withAccessToken(data) };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Connexion impossible';
       const lower = message.toLowerCase();
@@ -27,7 +51,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
       throw err;
     }
-  });
+  };
+
+  app.post('/auth/login', { preHandler: rateLimitLogin }, loginHandler);
+  app.post('/auth/token', { preHandler: rateLimitLogin }, loginHandler);
 
   app.post('/auth/logout', { preHandler: requireAuth }, async (req) => {
     const auth = (req as RequestWithAuth).auth;
@@ -68,6 +95,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const auth = (req as RequestWithAuth).auth;
     const body = req.body as { churchId: string };
     const switched = security.switchChurch({ sessionId: auth.sessionId, churchId: body.churchId });
-    return { data: switched };
+    return {
+      data: withAccessToken({
+        ...switched,
+        userId: auth.userId,
+        sessionId: auth.sessionId,
+        email: auth.email,
+      }),
+    };
   });
 }

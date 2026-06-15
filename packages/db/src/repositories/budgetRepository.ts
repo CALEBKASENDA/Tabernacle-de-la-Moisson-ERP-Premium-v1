@@ -38,7 +38,7 @@ export class BudgetRepository {
     fundId?: string | null;
     plannedReceiptsUsd: string;
     plannedExpensesUsd: string;
-  }): void {
+  }): string {
     const now = new Date().toISOString();
 
     const existing = this.db.get<{ budget_line_id: string }>(
@@ -70,7 +70,7 @@ export class BudgetRepository {
           now,
         }
       );
-      return;
+      return id;
     }
 
     this.db.run(
@@ -79,6 +79,7 @@ export class BudgetRepository {
         WHERE budget_line_id=@id`,
       { pr: params.plannedReceiptsUsd, pe: params.plannedExpensesUsd, now, id: existing.budget_line_id }
     );
+    return existing.budget_line_id;
   }
 
   computeBudgetExecution(params: { ctx: TenantContext; budgetId: string }) {

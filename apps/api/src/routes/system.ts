@@ -148,6 +148,7 @@ export async function systemRoutes(app: FastifyInstance): Promise<void> {
           latestFile: latestBackup,
         },
         pendingSyncEvents: finance.audit.countPendingSync(),
+        syncConflicts: finance.countSyncConflicts(),
         autoBackupEnabled: process.env.TABERNACLE_DISABLE_AUTO_BACKUP !== '1',
       },
     };
@@ -338,6 +339,31 @@ export async function systemRoutes(app: FastifyInstance): Promise<void> {
     const dataDir = getDataDir();
     const result = await pushPendingSyncEvents(dataDir, auth?.churchId);
     return { data: result };
+  });
+
+  app.get('/system/sync/conflicts', { preHandler: [requireAuth, requireSuperAdmin()] }, async (req) => {
+    const { finance } = getAppContext();
+    const auth = (req as RequestWithAuth).auth;
+    const limit = Number((req.query as { limit?: string }).limit ?? 50);
+    return { data: finance.listSyncConflicts(auth.churchId, limit) };
+  });
+
+  app.post('/system/sync/conflicts/:id/retry', { preHandler: [requireAuth, requireSuperAdmin()] }, async (req) => {
+    const { finance } = getAppContext();
+    const { id } = req.params as { id: string };
+    const result = await finance.retrySyncConflict(id);
+    if (!result.ok) {
+      return { data: result };
+    }
+    return { data: result };
+  });
+
+  app.post('/system/sync/conflicts/:id/dismiss', { preHandler: [requireAuth, requireSuperAdmin()] }, async (req) => {
+    const { finance } = getAppContext();
+    const { id } = req.params as { id: string };
+    const ok = finance.dismissSyncConflict(id);
+    if (!ok) throw new Error('Conflit introuvable');
+    return { ok: true };
   });
 
   app.get('/system/notifications', { preHandler: requireAuth }, async (req) => {

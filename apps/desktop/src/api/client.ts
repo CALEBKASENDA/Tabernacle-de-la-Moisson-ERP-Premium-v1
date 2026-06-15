@@ -274,6 +274,38 @@ export const api = {
       body: JSON.stringify(initialPath ? { initialPath } : {}),
     }),
   pushCloudSync: () => request<{ data: SyncPushResult }>('/system/sync/push', { method: 'POST', body: '{}' }),
+  getSyncConflicts: () => request<{ data: SyncConflictEvent[] }>('/system/sync/conflicts'),
+  retrySyncConflict: (id: string) =>
+    request<{ data: { ok: boolean; reason?: string } }>(`/system/sync/conflicts/${id}/retry`, {
+      method: 'POST',
+      body: '{}',
+    }),
+  dismissSyncConflict: (id: string) =>
+    request(`/system/sync/conflicts/${id}/dismiss`, { method: 'POST', body: '{}' }),
+  getMembers: (params?: { q?: string; status?: string }) => {
+    const q = new URLSearchParams(params as Record<string, string>).toString();
+    return request<{ data: ChurchMember[] }>(`/pastoral/members${q ? `?${q}` : ''}`);
+  },
+  createMember: (body: CreateMemberBody) =>
+    request<{ data: { memberId: string } }>('/pastoral/members', { method: 'POST', body: JSON.stringify(body) }),
+  updateMember: (id: string, patch: Partial<CreateMemberBody & { status?: string }>) =>
+    request(`/pastoral/members/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  deleteMember: (id: string) =>
+    request(`/pastoral/members/${id}/delete`, { method: 'POST', body: '{}' }),
+  getPastoralMembersDashboard: () => request<{ data: PastoralMembersDashboard }>('/pastoral/dashboard'),
+  getCells: () => request<{ data: PastoralCell[] }>('/pastoral/cells'),
+  createCell: (body: CreateCellBody) =>
+    request<{ data: { cellId: string } }>('/pastoral/cells', { method: 'POST', body: JSON.stringify(body) }),
+  getVisits: (params?: { dateFrom?: string; dateTo?: string }) => {
+    const q = new URLSearchParams(params as Record<string, string>).toString();
+    return request<{ data: PastoralVisit[] }>(`/pastoral/visits${q ? `?${q}` : ''}`);
+  },
+  createVisit: (body: CreateVisitBody) =>
+    request<{ data: { visitId: string } }>('/pastoral/visits', { method: 'POST', body: JSON.stringify(body) }),
+  getTrainings: () => request<{ data: PastoralTraining[] }>('/pastoral/trainings'),
+  createTraining: (body: CreateTrainingBody) =>
+    request<{ data: { trainingId: string } }>('/pastoral/trainings', { method: 'POST', body: JSON.stringify(body) }),
+  getOAuthProviders: () => request<{ data: string[] }>('/oauth/providers'),
   getNotifications: () => request<{ data: AppNotification[] }>('/system/notifications'),
   markNotificationRead: (id: string) =>
     request(`/system/notifications/${id}/read`, { method: 'POST', body: '{}' }),
@@ -326,6 +358,7 @@ export type CloudStatusData = {
     latestFile: string | null;
   };
   pendingSyncEvents?: number;
+  syncConflicts?: number;
   autoBackupEnabled?: boolean;
 };
 
@@ -371,6 +404,99 @@ export type SyncPushResult = {
   pushed: number;
   message: string;
   remoteUrl?: string;
+};
+
+export type SyncConflictEvent = {
+  event_id: string;
+  church_id: string;
+  entity_type: string;
+  operation: string;
+  entity_id: string;
+  payload_json: string;
+  created_at: string;
+  sync_status: string;
+};
+
+export type ChurchMember = {
+  member_id: string;
+  church_id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateMemberBody = {
+  fullName: string;
+  phone?: string;
+  email?: string;
+  birthDate?: string;
+  gender?: string;
+  notes?: string;
+};
+
+export type PastoralMembersDashboard = {
+  totalMembers: number;
+  recentMembers: ChurchMember[];
+  cellsCount?: number;
+  visitsThisMonth?: number;
+  upcomingTrainings?: PastoralTraining[];
+};
+
+export type PastoralCell = {
+  cell_id: string;
+  name: string;
+  meeting_day: string | null;
+  meeting_time: string | null;
+  location: string | null;
+  status: string;
+};
+
+export type CreateCellBody = {
+  name: string;
+  leaderMemberId?: string;
+  meetingDay?: string;
+  meetingTime?: string;
+  location?: string;
+  notes?: string;
+};
+
+export type PastoralVisit = {
+  visit_id: string;
+  visitor_name: string;
+  visit_date: string;
+  visit_type: string;
+  notes: string | null;
+};
+
+export type CreateVisitBody = {
+  visitorName: string;
+  visitDate: string;
+  visitType?: string;
+  memberId?: string;
+  notes?: string;
+};
+
+export type PastoralTraining = {
+  training_id: string;
+  title: string;
+  training_date: string;
+  trainer: string | null;
+  location: string | null;
+  description?: string | null;
+};
+
+export type CreateTrainingBody = {
+  title: string;
+  trainingDate: string;
+  trainer?: string;
+  location?: string;
+  description?: string;
 };
 
 export type AppNotification = {

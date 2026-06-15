@@ -81,7 +81,7 @@ export function ingestSyncEventsBatch(
     payloadJson: string;
     createdAt: string;
   }>
-): Promise<number> {
+): Promise<{ accepted: number; conflicts: Array<{ eventId: string; reason: string }> }> {
   const { finance } = getAppContext();
   return finance.ingestRemoteSyncEvents(events);
 }

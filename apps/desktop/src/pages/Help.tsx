@@ -10,6 +10,7 @@ export function Help() {
         <h3>Démarrage</h3>
         <ul className="security-checklist">
           <li>Connectez-vous avec votre courriel et mot de passe.</li>
+          <li>API / mobile : <code>POST /api/v1/auth/token</code> puis <code>Authorization: Bearer …</code></li>
           <li>Super administrateur : changez d&apos;église via la liste « Église active » en haut ou dans le menu latéral.</li>
           <li>Configurez le taux USD/CDF du jour avant les saisies en CDF.</li>
           <li>Activez la répartition par fonds (Paramétrage → Fonds dédiés) si votre église suit plusieurs fonds.</li>

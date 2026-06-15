@@ -100,9 +100,16 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
 
 
-    const accepted = await ingestSyncEventsBatch(body.events);
+    const result = await ingestSyncEventsBatch(body.events);
 
-    return { data: { accepted, total: body.events.length, applied: true } };
+    return {
+      data: {
+        accepted: result.accepted,
+        conflicts: result.conflicts,
+        total: body.events.length,
+        applied: result.conflicts.length === 0,
+      },
+    };
 
   });
 

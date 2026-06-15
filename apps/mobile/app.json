@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Tabernacle ERP",
+    "slug": "tabernacle-erp",
+    "version": "1.5.0",
+    "orientation": "portrait",
+    "scheme": "tabernacle-erp",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tabernacle.moisson.erp"
+    },
+    "android": {
+      "package": "com.tabernacle.moisson.erp",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1f3a"
+      }
+    },
+    "extra": {
+      "apiBaseUrl": "http://127.0.0.1:3847/api/v1"
+    }
+  }
+}

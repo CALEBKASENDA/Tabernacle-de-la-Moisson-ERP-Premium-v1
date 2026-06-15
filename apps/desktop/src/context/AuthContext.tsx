@@ -11,6 +11,7 @@ export type AuthUser = {
   permissions: string[];
   fundsEnabled?: boolean;
   sessionId: string;
+  accessToken?: string;
   churches?: Array<{ church_id: string; name: string }>;
 };
 
@@ -46,12 +47,16 @@ function saveStored(user: AuthUser | null): void {
 export function getAuthHeaders(): Record<string, string> {
   const user = loadStored();
   if (!user) return {};
-  return {
+  const headers: Record<string, string> = {
     'x-session-id': user.sessionId,
     'x-church-id': user.churchId,
     'x-user-id': user.userId,
     'x-workstation-id': 'workstation_local',
   };
+  if (user.accessToken) {
+    headers.Authorization = `Bearer ${user.accessToken}`;
+  }
+  return headers;
 }
 
 async function authRequest<T>(path: string, options?: RequestInit): Promise<T> {
@@ -133,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         churchName: string;
         roles: string[];
         permissions: string[];
+        accessToken?: string;
       };
     }>('/auth/login', {
       method: 'POST',
@@ -156,7 +162,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchChurch = async (churchId: string) => {
     const res = await authRequest<{
-      data: { churchId: string; churchName: string; roles: string[]; permissions: string[]; fundsEnabled: boolean };
+      data: {
+        churchId: string;
+        churchName: string;
+        roles: string[];
+        permissions: string[];
+        fundsEnabled: boolean;
+        accessToken?: string;
+        sessionId?: string;
+        userId?: string;
+        email?: string;
+      };
     }>('/auth/switch-church', {
       method: 'POST',
       body: JSON.stringify({ churchId }),
@@ -169,6 +185,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles: res.data.roles,
       permissions: res.data.permissions,
       fundsEnabled: res.data.fundsEnabled,
+      accessToken: res.data.accessToken ?? user.accessToken,
+      sessionId: res.data.sessionId ?? user.sessionId,
     };
     setUser(next);
     saveStored(next);

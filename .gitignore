@@ -8,6 +8,7 @@ data/
 .DS_Store
 apps/desktop/dist/
 installer/staging/
+installer/staging_work/
 installer/output/
 installer/cache/
 apps/desktop/src-tauri/target/

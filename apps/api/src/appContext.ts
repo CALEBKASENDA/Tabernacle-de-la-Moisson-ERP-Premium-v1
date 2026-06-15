@@ -1,7 +1,8 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { FinanceModule, SecurityModule, type TenantContext } from '@tabernacle/erp-premium-db';
+import { FinanceModule, SecurityModule, PastoralModule, type TenantContext } from '@tabernacle/erp-premium-db';
 import { openAppDatabase } from './database';
+import { extractBearerToken, verifyAccessToken } from './jwt';
 export type AuthenticatedSession = {
   sessionId: string;
   userId: string;
@@ -17,6 +18,7 @@ export type AppContext = {
   db: import('@tabernacle/erp-premium-db').SqliteDatabase;
   finance: FinanceModule;
   security: SecurityModule;
+  pastoral: PastoralModule;
   defaultChurchId: string;
 };
 
@@ -38,8 +40,9 @@ export function initAppContext(): AppContext {
   const churchName = process.env.TABERNACLE_CHURCH_NAME ?? 'Tabernacle de la Moisson';
   const finance = FinanceModule.bootstrap(db, defaultChurchId, churchName, dataDir);
   const security = SecurityModule.bootstrap(db, defaultChurchId);
+  const pastoral = PastoralModule.bootstrap(db);
 
-  ctx = { db, finance, security, defaultChurchId };
+  ctx = { db, finance, security, pastoral, defaultChurchId };
   return ctx;
 }
 
@@ -49,9 +52,19 @@ function headerValue(headers: Record<string, string | string[] | undefined>, key
 }
 
 export function resolveSession(headers: Record<string, string | string[] | undefined>): AuthenticatedSession | null {
+  const app = getAppContext();
+
+  const bearer = extractBearerToken(headers);
+  if (bearer) {
+    const claims = verifyAccessToken(bearer);
+    if (claims) {
+      const session = app.security.validateSession(claims.sessionId);
+      if (session) return session;
+    }
+  }
+
   const sessionId = headerValue(headers, 'x-session-id');
   if (!sessionId) return null;
-  const app = getAppContext();
   return app.security.validateSession(sessionId);
 }
 

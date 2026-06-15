@@ -139,6 +139,7 @@ export class FinanceModule {
           base: params.baseCurrency,
           quote: params.quoteCurrency,
           rate: params.rateValue,
+          effectiveDate: params.effectiveDate,
           display: formatRateDisplay(result.storedRate),
           inverse: formatRateDisplay(invertRate(result.storedRate)),
         },
@@ -592,6 +593,18 @@ export class FinanceModule {
         user: params.ctx.userId,
       }
     );
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'faith_pledge',
+        entityId: id,
+        action: 'CREATE',
+        newValue: { ...params, pledgeId: id },
+      })
+    );
     return id;
   }
 
@@ -638,6 +651,19 @@ export class FinanceModule {
         now,
         user: params.ctx.userId,
       }
+    );
+
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'faith_pledge_payment',
+        entityId: id,
+        action: 'CREATE',
+        newValue: { ...params, paymentId: id },
+      })
     );
 
     const pledge = this.db.get<{ follower: string }>(
@@ -712,6 +738,18 @@ export class FinanceModule {
         user: params.ctx.userId,
       }
     );
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'counting_session',
+        entityId: id,
+        action: 'CREATE',
+        newValue: params,
+      })
+    );
     return id;
   }
 
@@ -759,6 +797,18 @@ export class FinanceModule {
         user: params.ctx.userId,
       }
     );
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'counting_line',
+        entityId: id,
+        action: 'CREATE',
+        newValue: { ...params, countingLineId: id },
+      })
+    );
     return id;
   }
 
@@ -799,6 +849,18 @@ export class FinanceModule {
       `UPDATE counting_session SET status='validated', validated_at=@now, validated_by_user_id=@user
        WHERE counting_session_id=@id`,
       { now, user: params.ctx.userId, id: params.sessionId }
+    );
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'counting_session',
+        entityId: params.sessionId,
+        action: 'UPDATE',
+        newValue: { status: 'validated', linesCount: lines.length },
+      })
     );
   }
 
@@ -1055,7 +1117,10 @@ export class FinanceModule {
     return this.db.all(sql, binds);
   }
 
-  async ingestRemoteSyncEvents(events: import('./repositories/auditRepository').SyncEventIngestInput[]): Promise<number> {
+  async ingestRemoteSyncEvents(events: import('./repositories/auditRepository').SyncEventIngestInput[]): Promise<{
+    accepted: number;
+    conflicts: Array<{ eventId: string; reason: string }>;
+  }> {
     return this.audit.ingestRemoteEvents(events, {
       apply: async (ev) => {
         const result = await this.syncReplay.applyEvent(ev);
@@ -1064,6 +1129,40 @@ export class FinanceModule {
         }
       },
     });
+  }
+
+  listSyncConflicts(churchId?: string, limit = 100) {
+    return this.audit.listSyncEventsByStatus('CONFLICT', limit, churchId);
+  }
+
+  countSyncConflicts(churchId?: string) {
+    return this.audit.countSyncByStatus('CONFLICT', churchId);
+  }
+
+  dismissSyncConflict(eventId: string) {
+    return this.audit.dismissSyncConflict(eventId);
+  }
+
+  async retrySyncConflict(eventId: string): Promise<{ ok: boolean; reason?: string }> {
+    const row = this.audit.getSyncEvent(eventId);
+    if (!row || row.sync_status !== 'CONFLICT') {
+      return { ok: false, reason: 'Conflit introuvable' };
+    }
+    const ev: import('./repositories/auditRepository').SyncEventIngestInput = {
+      eventId: row.event_id,
+      churchId: row.church_id,
+      entityType: row.entity_type,
+      operation: row.operation,
+      entityId: row.entity_id,
+      payloadJson: row.payload_json,
+      createdAt: row.created_at,
+    };
+    const result = await this.syncReplay.applyEvent(ev);
+    if (!result.applied) {
+      return { ok: false, reason: result.reason ?? 'Replay échoué' };
+    }
+    this.db.run(`UPDATE sync_event SET sync_status='ACKED' WHERE event_id=@id`, { id: eventId });
+    return { ok: true };
   }
 
   // ─── TABLEAUX DE BORD / RAPPORTS ─────────────────────────────────────
@@ -1270,7 +1369,20 @@ export class FinanceModule {
     periodEnd: string;
     fiscalYear?: number;
   }) {
-    return this.budgets.createBudget(params);
+    const budgetId = this.budgets.createBudget(params);
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'finance_budget',
+        entityId: budgetId,
+        action: 'CREATE',
+        newValue: { ...params, budgetId },
+      })
+    );
+    return budgetId;
   }
 
   upsertBudgetLine(params: {
@@ -1281,7 +1393,20 @@ export class FinanceModule {
     plannedReceiptsUsd: string;
     plannedExpensesUsd: string;
   }) {
-    return this.budgets.upsertBudgetLine(params);
+    const lineId = this.budgets.upsertBudgetLine(params);
+    this.audit.append(
+      buildAuditEntry({
+        churchId: params.ctx.churchId,
+        sessionId: params.ctx.sessionId,
+        workstationId: params.ctx.workstationId,
+        actorUserId: params.ctx.userId,
+        entityType: 'finance_budget_line',
+        entityId: lineId,
+        action: 'CREATE',
+        newValue: params,
+      })
+    );
+    return lineId;
   }
 
   computeBudgetExecution(params: { ctx: TenantContext; budgetId: string }) {

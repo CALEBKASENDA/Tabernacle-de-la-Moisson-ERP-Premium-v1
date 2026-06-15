@@ -2,6 +2,7 @@ export * from './sqlite/sqliteDatabase';
 export * from './tenantContext';
 export * from './FinanceModule';
 export * from './SecurityModule';
+export * from './PastoralModule';
 export * from './security/password';
 export * from './schema/initFinanceSchema';
 export * from './repositories/exchangeRateRepository';

@@ -1,6 +1,6 @@
 # Tabernacle de la Moisson ERP Premium
 
-ERP professionnel multi-églises, **Desktop First**, **Local First**, module **Gestion Financière** complet (**v1.3.1**).
+ERP professionnel multi-églises, **Desktop First**, **Local First**, module **Gestion Financière** complet (**v1.5.0**).
 
 ## Architecture
 
@@ -27,6 +27,7 @@ apps/
 ## Démarrage rapide
 
 ```bash
+npm run setup      # première installation (.env, clés, dossier data)
 npm install
 npm run dev
 ```
@@ -38,6 +39,7 @@ npm run dev
 | `TABERNACLE_DATA_DIR` | Dossier données |
 | `TABERNACLE_DB_KEY` | Clé SQLCipher |
 | `TABERNACLE_SYNC_TOKEN` | Token partagé local ↔ VM pour `/sync/ingest` |
+| `TABERNACLE_JWT_SECRET` | Secret JWT (Bearer) pour web/mobile/API |
 | `TABERNACLE_SYNC_CHURCH_ID` | Limite l'ingest à une église (recommandé sur VM) |
 | `TABERNACLE_BOOTSTRAP_*` | Compte admin **créé une fois** au premier démarrage |
 | `TABERNACLE_BOOTSTRAP_RESET=true` | Force la réinitialisation du mot de passe bootstrap |
@@ -111,10 +113,19 @@ npm run dev
 npm run installer:win
 ```
 
-Produit : `installer/output/TabernacleERP-Setup-1.3.1.exe`
+Produit : `installer/output/TabernacleERP-Setup-1.5.0.exe`
+
+## Application mobile (Expo)
+
+Consultation finance et pastoral depuis smartphone (Android / iOS).
+
+```bash
+# API démarrée (npm run dev) — sur appareil physique, éditez apps/mobile/app.json → extra.apiBaseUrl
+npm run mobile:start
+```
 
 ## Roadmap
 
-- JWT / OAuth2
-- Sync multi-entités étendue (enveloppes, taux…)
-- Modules hors finance
+- Intégrations OAuth avancées (provisionnement auto des comptes)
+- Notifications push mobile
+- Modules RH et inventaire
