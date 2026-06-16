@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
@@ -53,8 +54,13 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle().clone();
-            let bridge = spawn_embedded_api(&handle)?;
-            app.manage(ApiBridge(Mutex::new(bridge)));
+            if let Err(err) = try_setup(&handle) {
+                if let Ok((data_dir, _, _)) = resolve_install_dirs(&handle) {
+                    append_boot_log(&data_dir, &format!("Echec demarrage : {err}"));
+                }
+                eprintln!("Tabernacle ERP — echec demarrage : {err}");
+                return Err(err.into());
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![api_request])
@@ -67,6 +73,12 @@ pub fn run() {
                 }
             }
         });
+}
+
+fn try_setup(app: &tauri::AppHandle) -> Result<(), String> {
+    let bridge = spawn_embedded_api(app).map_err(|e| e.to_string())?;
+    app.manage(ApiBridge(Mutex::new(bridge)));
+    Ok(())
 }
 
 #[tauri::command]
@@ -88,6 +100,56 @@ fn monorepo_root() -> PathBuf {
         .join("..")
         .canonicalize()
         .unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")))
+}
+
+fn append_boot_log(data_dir: &Path, message: &str) {
+    let _ = (|| -> Result<(), Box<dyn std::error::Error>> {
+        std::fs::create_dir_all(data_dir)?;
+        let path = data_dir.join("tauri-boot.log");
+        let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+        let stamp = chrono_lite_now();
+        writeln!(file, "[{stamp}] {message}")?;
+        Ok(())
+    })();
+}
+
+fn chrono_lite_now() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format!("unix:{secs}")
+}
+
+fn resolve_resource_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let embedded_rel = Path::new("app")
+        .join("apps")
+        .join("api")
+        .join("dist")
+        .join("embedded.js");
+
+    if let Ok(resource) = app.path().resource_dir() {
+        if resource.join(&embedded_rel).exists() {
+            return Ok(resource);
+        }
+        append_boot_log(
+            &resolve_install_dirs(app)
+                .map(|(d, _, _)| d)
+                .unwrap_or_else(|_| PathBuf::from(".")),
+            &format!("resource_dir sans API embarquee : {}", resource.display()),
+        );
+    }
+
+    if let Ok(exe_dir) = app.path().executable_dir() {
+        for base in [exe_dir.join("resources"), exe_dir.clone()] {
+            if base.join(&embedded_rel).exists() {
+                return Ok(base);
+            }
+        }
+    }
+
+    Err("Ressources API introuvables (node/app). Reinstallez Tabernacle ERP.".into())
 }
 
 fn resolve_embedded_paths(
@@ -114,7 +176,7 @@ fn resolve_embedded_paths(
             root.join("data"),
         ))
     } else {
-        let resource = app.path().resource_dir()?;
+        let resource = resolve_resource_root(app).map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
         let node = resource.join("node").join("node.exe");
         let embedded_js = resource
             .join("app")
@@ -122,10 +184,16 @@ fn resolve_embedded_paths(
             .join("api")
             .join("dist")
             .join("embedded.js");
+        let api_cwd = resource.join("app").join("apps").join("api");
 
-        let (data_dir, config_dir, install_root) = resolve_install_dirs(app)?;
-        let _ = (config_dir, install_root);
-        Ok((node, embedded_js, resource.join("app").join("apps").join("api"), data_dir))
+        let (data_dir, _, _) = resolve_install_dirs(app)?;
+        if !node.exists() {
+            return Err(format!("Node embarque introuvable : {}", node.display()).into());
+        }
+        if !embedded_js.exists() {
+            return Err(format!("API embarquee introuvable : {}", embedded_js.display()).into());
+        }
+        Ok((node, embedded_js, api_cwd, data_dir))
     }
 }
 
@@ -157,7 +225,7 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
     let env_file = config_dir.join(".env");
     let env_template = config_dir.join("env.template");
     if !env_file.exists() {
-        if let Ok(resource) = app.path().resource_dir() {
+        if let Ok(resource) = resolve_resource_root(app) {
             let bundled_template = resource.join("config").join("env.template");
             if bundled_template.exists() {
                 std::fs::create_dir_all(&config_dir)?;
@@ -168,6 +236,14 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
         }
     }
 
+    let stderr_log = data_dir.join("api-embedded-stderr.log");
+    let stderr_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&stderr_log)
+        .ok();
+
     let mut cmd = Command::new(&node);
     cmd.arg(&embedded_js)
         .current_dir(&api_cwd)
@@ -177,7 +253,11 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
         .env("NODE_ENV", "production")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+        .stderr(if stderr_file.is_some() {
+            Stdio::from(stderr_file.unwrap())
+        } else {
+            Stdio::piped()
+        });
 
     if env_file.exists() {
         cmd.env("TABERNACLE_ENV_FILE", &env_file);
@@ -199,6 +279,13 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
     for _ in 0..200 {
         ready_line.clear();
         if reader.read_line(&mut ready_line)? == 0 {
+            append_boot_log(
+                &data_dir,
+                &format!(
+                    "API embarquee arretee. Voir {}",
+                    stderr_log.display()
+                ),
+            );
             return Err("Processus API embarquée arrêté avant signal ready".into());
         }
         if let Ok(resp) = serde_json::from_str::<IncomingResponse>(ready_line.trim()) {

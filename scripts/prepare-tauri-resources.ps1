@@ -28,6 +28,8 @@ function Copy-Tree($src, $dest, [string[]]$ExcludeDirs = @()) {
 function Test-StagingApp($appRoot) {
     @(
         (Join-Path $appRoot 'apps\api\dist\server.js'),
+        (Join-Path $appRoot 'apps\api\dist\embedded.js'),
+        (Join-Path $appRoot 'apps\api\dist\appFactory.js'),
         (Join-Path $appRoot 'apps\desktop\dist\index.html'),
         (Join-Path $appRoot 'packages\db\dist\index.js'),
         (Join-Path $appRoot 'node_modules\better-sqlite3')
@@ -89,11 +91,33 @@ if ((Test-Path $stagingApp) -and (Test-Path $stagingNode) -and (Test-StagingApp 
     Copy-Item $nodeCache (Join-Path $NodeDest 'node.exe') -Force
 }
 
-# Toujours aligner l'API embarquee et le build UI sur la version courante
-Copy-Item $embeddedJs (Join-Path $AppDest 'apps\api\dist\embedded.js') -Force
+# Toujours aligner API + UI + packages compiles sur la version courante
+$apiDist = Join-Path $Root 'apps\api\dist'
+if (-not (Test-Path (Join-Path $apiDist 'appFactory.js'))) {
+    throw "appFactory.js manquant : lancez npm run build -w @tabernacle/erp-premium-api"
+}
+Copy-Tree $apiDist (Join-Path $AppDest 'apps\api\dist')
+
+foreach ($pkg in @('domain', 'db')) {
+    $pkgDist = Join-Path $Root "packages\$pkg\dist"
+    if (Test-Path $pkgDist) {
+        Copy-Tree $pkgDist (Join-Path $AppDest "packages\$pkg\dist")
+    }
+}
+
 $desktopDist = Join-Path $Root 'apps\desktop\dist'
 if (Test-Path $desktopDist) {
     Copy-Tree $desktopDist (Join-Path $AppDest 'apps\desktop\dist')
+}
+
+$required = @(
+    (Join-Path $AppDest 'apps\api\dist\embedded.js'),
+    (Join-Path $AppDest 'apps\api\dist\appFactory.js'),
+    (Join-Path $AppDest 'apps\desktop\dist\index.html')
+)
+$missing = $required | Where-Object { -not (Test-Path $_) }
+if ($missing) {
+    throw "Ressources Tauri incompletes :`n$($missing -join "`n")"
 }
 
 @(

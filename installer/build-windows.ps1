@@ -67,6 +67,7 @@ function Test-StagingReadyTauri($stagingRoot) {
         (Join-Path $stagingRoot 'TabernacleERP.exe'),
         (Join-Path $stagingRoot 'resources\node\node.exe'),
         (Join-Path $stagingRoot 'resources\app\apps\api\dist\embedded.js'),
+        (Join-Path $stagingRoot 'resources\app\apps\api\dist\appFactory.js'),
         (Join-Path $stagingRoot 'resources\app\apps\desktop\dist\index.html')
     )
     $missing = $required | Where-Object { -not (Test-Path $_) }
