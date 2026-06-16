@@ -50,16 +50,60 @@ pub struct ApiResponse {
     pub headers: HashMap<String, String>,
 }
 
+#[cfg(windows)]
+fn show_fatal_error(message: &str) {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use std::ptr;
+
+    #[link(name = "user32")]
+    extern "system" {
+        fn MessageBoxW(
+            hwnd: *mut std::ffi::c_void,
+            text: *const u16,
+            caption: *const u16,
+            utype: u32,
+        ) -> i32;
+    }
+
+    fn to_wide(value: &str) -> Vec<u16> {
+        OsStr::new(value).encode_wide().chain(Some(0)).collect()
+    }
+
+    let text = to_wide(message);
+    let caption = to_wide("Tabernacle de la Moisson ERP");
+    unsafe {
+        MessageBoxW(ptr::null_mut(), text.as_ptr(), caption.as_ptr(), 0x10);
+    }
+}
+
+/// Dossier contenant l'exécutable (Tauri `resource_dir` sur Windows, pas `executable_dir`).
+fn install_root_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
+    app.path()
+        .resource_dir()
+        .ok()
+        .or_else(|| {
+            std::env::current_exe()
+                .ok()
+                .and_then(|path| path.parent().map(Path::to_path_buf))
+        })
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle().clone();
             if let Err(err) = try_setup(&handle) {
+                let message = format!("Echec demarrage : {err}");
                 if let Ok((data_dir, _, _)) = resolve_install_dirs(&handle) {
-                    append_boot_log(&data_dir, &format!("Echec demarrage : {err}"));
+                    append_boot_log(&data_dir, &message);
                 }
-                eprintln!("Tabernacle ERP — echec demarrage : {err}");
-                return Err(err.into());
+                eprintln!("Tabernacle ERP — {message}");
+                #[cfg(windows)]
+                show_fatal_error(&format!(
+                    "{err}\n\nConsultez data\\tauri-boot.log dans le dossier d'installation."
+                ));
+                std::process::exit(1);
             }
             Ok(())
         })
@@ -129,24 +173,24 @@ fn resolve_resource_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .join("dist")
         .join("embedded.js");
 
-    if let Ok(resource) = app.path().resource_dir() {
-        if resource.join(&embedded_rel).exists() {
-            return Ok(resource);
+    let install_root = install_root_dir(app).ok_or_else(|| {
+        "Ressources API introuvables (dossier executable). Reinstallez Tabernacle ERP.".to_string()
+    })?;
+
+    let mut tried = Vec::new();
+    for base in [install_root.join("resources"), install_root.clone()] {
+        let candidate = base.join(&embedded_rel);
+        tried.push(candidate.display().to_string());
+        if candidate.exists() {
+            return Ok(base);
         }
-        append_boot_log(
-            &resolve_install_dirs(app)
-                .map(|(d, _, _)| d)
-                .unwrap_or_else(|_| PathBuf::from(".")),
-            &format!("resource_dir sans API embarquee : {}", resource.display()),
-        );
     }
 
-    if let Ok(exe_dir) = app.path().executable_dir() {
-        for base in [exe_dir.join("resources"), exe_dir.clone()] {
-            if base.join(&embedded_rel).exists() {
-                return Ok(base);
-            }
-        }
+    if let Ok((data_dir, _, _)) = resolve_install_dirs(app) {
+        append_boot_log(
+            &data_dir,
+            &format!("API embarquee introuvable. Chemins testes : {}", tried.join(" | ")),
+        );
     }
 
     Err("Ressources API introuvables (node/app). Reinstallez Tabernacle ERP.".into())
@@ -200,8 +244,7 @@ fn resolve_embedded_paths(
 fn resolve_install_dirs(
     app: &tauri::AppHandle,
 ) -> Result<(PathBuf, PathBuf, PathBuf), Box<dyn std::error::Error>> {
-    if let Ok(exe_dir) = app.path().executable_dir() {
-        let install_root = exe_dir.clone();
+    if let Some(install_root) = install_root_dir(app) {
         let data_dir = install_root.join("data");
         let config_dir = install_root.join("config");
         std::fs::create_dir_all(&data_dir)?;
@@ -217,10 +260,21 @@ fn resolve_install_dirs(
     Ok((data_dir, config_dir, app_data))
 }
 
+/// Chemins sans préfixe `\\?\` — Node.js ne les gère pas correctement sous Windows.
+fn path_for_subprocess(path: &Path) -> PathBuf {
+    let rendered = path.to_string_lossy();
+    let normalized = rendered.strip_prefix(r"\\?\").unwrap_or(&rendered);
+    PathBuf::from(normalized)
+}
+
 fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn std::error::Error>> {
     let (node, embedded_js, api_cwd, data_dir) = resolve_embedded_paths(app)?;
     let (_, config_dir, install_root) = resolve_install_dirs(app)?;
     std::fs::create_dir_all(&data_dir)?;
+
+    let node = path_for_subprocess(&node);
+    let embedded_js = path_for_subprocess(&embedded_js);
+    let api_cwd = path_for_subprocess(&api_cwd);
 
     let env_file = config_dir.join(".env");
     let env_template = config_dir.join("env.template");
@@ -248,8 +302,8 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
     cmd.arg(&embedded_js)
         .current_dir(&api_cwd)
         .env("TABERNACLE_EMBEDDED", "1")
-        .env("TABERNACLE_DATA_DIR", &data_dir)
-        .env("TABERNACLE_INSTALL_ROOT", &install_root)
+        .env("TABERNACLE_DATA_DIR", path_for_subprocess(&data_dir))
+        .env("TABERNACLE_INSTALL_ROOT", path_for_subprocess(&install_root))
         .env("NODE_ENV", "production")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -260,7 +314,7 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
         });
 
     if env_file.exists() {
-        cmd.env("TABERNACLE_ENV_FILE", &env_file);
+        cmd.env("TABERNACLE_ENV_FILE", path_for_subprocess(&env_file));
     }
 
     #[cfg(windows)]
