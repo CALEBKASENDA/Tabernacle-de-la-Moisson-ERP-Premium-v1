@@ -2,7 +2,7 @@
 ; Compiler : ISCC.exe TabernacleERP.iss  (ou npm run installer:win)
 
 #define MyAppName "Tabernacle de la Moisson ERP"
-#define MyAppVersion "1.5.4"
+#define MyAppVersion "1.5.5"
 #define MyAppPublisher "Tabernacle de la Moisson"
 #define MyAppURL "https://github.com/tabernacle-moisson/erp"
 #define MyAppExeNameDebug "Launch-Tabernacle.cmd"

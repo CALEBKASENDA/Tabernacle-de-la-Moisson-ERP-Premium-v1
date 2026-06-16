@@ -1,6 +1,6 @@
 # Tabernacle de la Moisson ERP Premium
 
-ERP professionnel multi-églises, **hybride Local First** (hors-ligne + sync cloud optionnelle), module **Gestion Financière** complet (**v1.5.3**).
+ERP professionnel multi-églises, **hybride Local First** (hors-ligne + sync cloud optionnelle), module **Gestion Financière** complet (**v1.5.5**).
 
 ## Architecture
 
@@ -78,7 +78,7 @@ Installateur généré : `apps/desktop/src-tauri/target/release/bundle/`
 |------|-----------|-----|
 | `npm run dev` | Navigateur (5173) | 3847 |
 | `npm run desktop:native:dev` | Fenêtre Tauri | 3847 (auto) |
-| Installateur Inno Setup | Navigateur auto | 3847 (auto) |
+| Installateur Inno Setup | Fenêtre app dédiée (sans barre URL) | 3847 (auto) |
 | `npm run desktop:native:build` | Fenêtre Tauri | 3847 embarquée |
 
 Données natives Tauri : `%APPDATA%\com.tabernacle.moisson.erp\data\`
@@ -113,7 +113,7 @@ npm run dev
 npm run installer:win
 ```
 
-Produit : `installer/output/TabernacleERP-Setup-1.5.3.exe`
+Produit : `installer/output/TabernacleERP-Setup-1.5.5.exe`
 
 ## Application mobile (Expo)
 

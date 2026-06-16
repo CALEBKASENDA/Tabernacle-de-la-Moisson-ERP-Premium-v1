@@ -1,7 +1,8 @@
 /**
- * Lanceur rapide sans console — démarre le serveur et ouvre l'écran de chargement.
+ * Lanceur rapide sans console — démarre le serveur local et ouvre une
+ * fenetre desktop (Edge app mode) sans barre d'adresse.
  */
-import { spawn, execFile } from 'node:child_process';
+import { spawn, execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,8 +57,39 @@ function openPath(target) {
   execFile('cmd.exe', ['/c', 'start', '', target], { windowsHide: true });
 }
 
+function openDesktopWindow(url) {
+  const edgeCandidates = [
+    path.join(process.env['ProgramFiles(x86)'] || '', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    path.join(process.env.ProgramFiles || '', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+  ].filter(Boolean);
+
+  const edgeExe = edgeCandidates.find((p) => fs.existsSync(p));
+  if (!edgeExe) return false;
+
+  try {
+    execFileSync(edgeExe, [`--app=${url}`, '--new-window', '--window-size=1366,860'], {
+      windowsHide: true,
+      stdio: 'ignore',
+      timeout: 2500,
+    });
+    return true;
+  } catch {
+    try {
+      execFile(edgeExe, [`--app=${url}`, '--new-window', '--window-size=1366,860'], {
+        windowsHide: true,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
 function openApp() {
-  openPath(`http://127.0.0.1:${PORT}/`);
+  const url = `http://127.0.0.1:${PORT}/`;
+  if (openDesktopWindow(url)) return;
+  openPath(url);
 }
 
 async function waitForPort(port, maxMs = 8000) {
@@ -139,7 +171,7 @@ function startServer() {
       WEB_DIST_DIR: webDist,
       HOST: '127.0.0.1',
       PORT: String(PORT),
-      TABERNACLE_APP_VERSION: '1.5.4',
+      TABERNACLE_APP_VERSION: '1.5.5',
       NODE_ENV: 'production',
     },
   });
