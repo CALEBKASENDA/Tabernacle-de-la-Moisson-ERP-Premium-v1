@@ -1,6 +1,6 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
-export function migrateBankReconciliationMatch(db: SqliteDatabase): void {
+export function migrateBankReconciliationMatch(db: AppDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS bank_reconciliation_match (
       match_id TEXT PRIMARY KEY,

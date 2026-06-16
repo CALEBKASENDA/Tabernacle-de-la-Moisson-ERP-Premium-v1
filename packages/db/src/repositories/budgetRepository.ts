@@ -1,9 +1,9 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId, parseMoneyMicro, computeBudgetExecution } from '@tabernacle/erp-premium-domain';
 
 export class BudgetRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   createBudget(params: {
     ctx: TenantContext;

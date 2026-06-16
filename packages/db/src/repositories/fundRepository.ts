@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId, parseMoneyMicro } from '@tabernacle/erp-premium-domain';
 
 export type FundRow = {
@@ -11,7 +11,7 @@ export type FundRow = {
 };
 
 export class FundRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   list(ctx: TenantContext): FundRow[] {
     return this.db.all<FundRow>(

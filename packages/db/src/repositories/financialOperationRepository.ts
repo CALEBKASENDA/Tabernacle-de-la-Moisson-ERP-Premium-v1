@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
 export type FinancialOperationPieceType = 'REC' | 'DEP' | 'CAI' | 'BAN';
 
@@ -42,7 +42,7 @@ export type FinancialOperationRow = {
 };
 
 export class FinancialOperationRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   async getById(params: { ctx: TenantContext; operationId: string }): Promise<FinancialOperationRow | null> {
     const { ctx, operationId } = params;

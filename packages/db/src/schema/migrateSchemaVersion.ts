@@ -1,13 +1,13 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
-const MIGRATIONS: Array<{ version: number; name: string; run: (db: SqliteDatabase) => void }> = [];
+const MIGRATIONS: Array<{ version: number; name: string; run: (db: AppDatabase) => void }> = [];
 
-export function registerMigration(version: number, name: string, run: (db: SqliteDatabase) => void): void {
+export function registerMigration(version: number, name: string, run: (db: AppDatabase) => void): void {
   MIGRATIONS.push({ version, name, run });
   MIGRATIONS.sort((a, b) => a.version - b.version);
 }
 
-export function runVersionedMigrations(db: SqliteDatabase): void {
+export function runVersionedMigrations(db: AppDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migration (
       version INTEGER PRIMARY KEY,

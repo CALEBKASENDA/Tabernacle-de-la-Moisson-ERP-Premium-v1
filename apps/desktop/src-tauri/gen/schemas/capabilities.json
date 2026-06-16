@@ -1,1 +1,1 @@
-{"com.tabernacle.moisson.erp":{"identifier":"com.tabernacle.moisson.erp","description":"ERP finance Tabernacle de la Moisson","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-close","core:window:allow-set-title"]}}
+{"com.tabernacle.moisson.erp":{"identifier":"com.tabernacle.moisson.erp","description":"ERP finance Tabernacle de la Moisson","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-close","core:window:allow-set-title","allow-api-request"]}}

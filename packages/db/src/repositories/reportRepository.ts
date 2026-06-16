@@ -1,9 +1,10 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
+import { sqlMonthFromDate } from '../schema/schemaUtils';
 import { parseMoneyMicro, aggregateOperations } from '@tabernacle/erp-premium-domain';
 
 export class ReportRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   private isFundsEnabled(churchId: string): boolean {
     const row = this.db.get<{ funds_enabled: number }>(
@@ -148,8 +149,9 @@ export class ReportRepository {
   }
 
   monthlyTrend(ctx: TenantContext) {
+    const monthExpr = sqlMonthFromDate('op_date', this.db.dialect);
     const rows = this.db.all<{ month: string; r: string; e: string }>(
-      `SELECT strftime('%Y-%m', op_date) as month,
+      `SELECT ${monthExpr} as month,
         COALESCE(SUM(CAST(receipts_usd_converted AS REAL) + CAST(receipts_usd AS REAL)), 0) as r,
         COALESCE(SUM(CAST(expenses_usd AS REAL) + CAST(expenses_usd_converted AS REAL)), 0) as e
        FROM financial_operation

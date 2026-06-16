@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from './sqlite/sqliteDatabase';
+import type { AppDatabase } from './database/appDatabase';
 import type { TenantContext } from './tenantContext';
 import { MemberRepository } from './repositories/memberRepository';
 import { CellRepository } from './repositories/cellRepository';
@@ -11,14 +11,14 @@ export class PastoralModule {
   readonly visits: VisitRepository;
   readonly trainings: TrainingRepository;
 
-  constructor(private readonly db: SqliteDatabase) {
+  constructor(private readonly db: AppDatabase) {
     this.members = new MemberRepository(db);
     this.cells = new CellRepository(db);
     this.visits = new VisitRepository(db);
     this.trainings = new TrainingRepository(db);
   }
 
-  static bootstrap(db: SqliteDatabase): PastoralModule {
+  static bootstrap(db: AppDatabase): PastoralModule {
     return new PastoralModule(db);
   }
 

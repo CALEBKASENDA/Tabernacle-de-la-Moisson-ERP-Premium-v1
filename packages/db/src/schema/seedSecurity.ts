@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 import { hashPassword } from '../security/password';
 import { seedSuperAdmin } from './initFinanceSchema';
@@ -108,7 +108,7 @@ function resolveBootstrapAccounts(): Array<{ email: string; fullName: string; pa
   ];
 }
 
-export function seedSecurityDefaults(db: SqliteDatabase, defaultChurchId: string): void {
+export function seedSecurityDefaults(db: AppDatabase, defaultChurchId: string): void {
   const now = new Date().toISOString();
 
   for (const code of PERMISSION_CODES) {

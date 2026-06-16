@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tabernacle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tabernacle}
+      POSTGRES_DB: ${POSTGRES_DB:-tabernacle}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tabernacle} -d ${POSTGRES_DB:-tabernacle}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   app:
     build: .
     image: tabernacle-erp:latest
@@ -11,11 +28,16 @@ services:
       HOST: 0.0.0.0
       PORT: 3847
       TABERNACLE_DATA_DIR: /data
+      DATABASE_URL: ${DATABASE_URL:-}
       WEB_DIST_DIR: /app/apps/desktop/dist
       DOMAIN: ${DOMAIN:-}
       ACME_EMAIL: ${ACME_EMAIL:-}
     volumes:
       - tabernacle_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
     expose:
       - "3847"
     healthcheck:
@@ -39,11 +61,16 @@ services:
       HOST: 0.0.0.0
       PORT: 3847
       TABERNACLE_DATA_DIR: /data
+      DATABASE_URL: ${DATABASE_URL:-}
       WEB_DIST_DIR: /app/apps/desktop/dist
       DOMAIN: ${DOMAIN:-}
       ACME_EMAIL: ${ACME_EMAIL:-}
     volumes:
       - tabernacle_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
     ports:
       - "${APP_PORT:-3847}:3847"
 
@@ -68,5 +95,6 @@ services:
 
 volumes:
   tabernacle_data:
+  postgres_data:
   caddy_data:
   caddy_config:

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npm run build -w @tabernacle/erp-premium-domain && npm run build -w @tabernacle/erp-premium-db && tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "start:embedded": "node dist/embedded.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

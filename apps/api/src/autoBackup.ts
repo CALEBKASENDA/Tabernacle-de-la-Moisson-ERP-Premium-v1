@@ -9,6 +9,9 @@ function getDataDir(): string {
 }
 
 export function runAutoBackup(): { ok: boolean; fileName?: string; error?: string } {
+  if (process.env.DATABASE_URL?.trim()) {
+    return { ok: false, error: 'Sauvegarde fichier ignorée en mode PostgreSQL' };
+  }
   const dataDir = getDataDir();
   const dbPath = path.join(dataDir, 'tabernacle-finance.sqlite');
   if (!fs.existsSync(dbPath)) {
@@ -46,6 +49,10 @@ export function runAutoBackup(): { ok: boolean; fileName?: string; error?: strin
 
 export function startAutoBackupScheduler(): void {
   if (process.env.TABERNACLE_DISABLE_AUTO_BACKUP === '1') return;
+  if (process.env.DATABASE_URL?.trim()) {
+    console.log('[Tabernacle] Sauvegarde SQLite désactivée (PostgreSQL cloud)');
+    return;
+  }
 
   const tick = () => runAutoBackup();
   setTimeout(tick, 60_000);

@@ -1,6 +1,6 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
-export function migratePastoralExtended(db: SqliteDatabase): void {
+export function migratePastoralExtended(db: AppDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS pastoral_cell (
       cell_id TEXT PRIMARY KEY,

@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import {
   type ExchangeRate,
   computeFinancialOperation,
@@ -12,7 +12,7 @@ import { AuditRepository } from '../repositories/auditRepository';
 
 export class FinanceRecalculationService {
   constructor(
-    private readonly db: SqliteDatabase,
+    private readonly db: AppDatabase,
     private readonly auditRepo: AuditRepository
   ) {}
 

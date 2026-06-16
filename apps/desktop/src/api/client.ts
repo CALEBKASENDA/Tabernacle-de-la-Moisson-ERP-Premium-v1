@@ -1,31 +1,35 @@
 import { getAuthHeaders } from '../context/AuthContext';
 import { traduireErreur } from '../i18n/fr';
+import { apiTransport } from './transport';
 
 const API_BASE = '/api/v1';
 
-async function parseJsonResponse<T>(res: Response): Promise<{ json: T; res: Response }> {
-  const text = await res.text();
+async function parseJsonResponse<T>(
+  status: number,
+  text: string,
+): Promise<{ json: T; status: number }> {
   if (!text) {
-    if (res.status === 502 || res.status === 504 || res.status === 0) {
+    if (status === 502 || status === 504 || status === 0) {
       throw new Error('Serveur API indisponible. Relancez Tabernacle de la Moisson ERP.');
     }
-    throw new Error(`Réponse vide du serveur (HTTP ${res.status})`);
+    throw new Error(`Réponse vide du serveur (HTTP ${status})`);
   }
   try {
-    return { json: JSON.parse(text) as T, res };
+    return { json: JSON.parse(text) as T, status };
   } catch {
     throw new Error(
-      res.ok
+      status >= 200 && status < 300
         ? 'Réponse serveur invalide (JSON attendu)'
-        : `Erreur serveur (HTTP ${res.status})`
+        : `Erreur serveur (HTTP ${status})`,
     );
   }
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  let res: Response;
+  let status: number;
+  let text: string;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    const res = await apiTransport(`${API_BASE}${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -33,13 +37,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         ...options?.headers,
       },
     });
+    status = res.status;
+    text = res.text;
   } catch {
     throw new Error('Impossible de joindre l\'API. Vérifiez que l\'application est démarrée.');
   }
-  const { json } = await parseJsonResponse<{ error?: string } & T>(res);
-  if (!res.ok) {
+  const { json } = await parseJsonResponse<{ error?: string } & T>(status, text);
+  if (status < 200 || status >= 300) {
     const msg = json.error?.trim();
-    throw new Error(traduireErreur(msg && msg !== 'Internal Server Error' ? msg : `Erreur HTTP ${res.status}`));
+    throw new Error(traduireErreur(msg && msg !== 'Internal Server Error' ? msg : `Erreur HTTP ${status}`));
   }
   return json;
 }
@@ -58,11 +64,11 @@ export const api = {
   },
   exportOperationsCsv: async (params?: { dateFrom?: string; dateTo?: string; fundId?: string }) => {
     const q = new URLSearchParams(params as Record<string, string>).toString();
-    const res = await fetch(`${API_BASE}/finance/operations/export.csv${q ? `?${q}` : ''}`, {
+    const res = await apiTransport(`${API_BASE}/finance/operations/export.csv${q ? `?${q}` : ''}`, {
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error(`Export CSV échoué (HTTP ${res.status})`);
-    const blob = await res.blob();
+    if (res.status < 200 || res.status >= 300) throw new Error(`Export CSV échoué (HTTP ${res.status})`);
+    const blob = new Blob([res.text], { type: res.headers['content-type'] ?? 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

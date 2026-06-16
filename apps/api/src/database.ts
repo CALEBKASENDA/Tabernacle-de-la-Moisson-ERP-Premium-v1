@@ -2,7 +2,9 @@ import path from 'node:path';
 import fs from 'node:fs';
 import {
   SqliteDatabase,
+  PostgresDatabase,
   migratePlainDatabaseToEncrypted,
+  type AppDatabase,
 } from '@tabernacle/erp-premium-db';
 
 function resolveDbEncryption():
@@ -37,7 +39,7 @@ function prepareDatabaseFile(dbPath: string, encryption: ReturnType<typeof resol
   }
 }
 
-export function openAppDatabase(dataDir: string): SqliteDatabase {
+function openSqliteDatabase(dataDir: string): SqliteDatabase {
   fs.mkdirSync(dataDir, { recursive: true });
   const dbPath = path.join(dataDir, 'tabernacle-finance.sqlite');
   const encryption = resolveDbEncryption();
@@ -57,4 +59,14 @@ export function openAppDatabase(dataDir: string): SqliteDatabase {
   }
 
   return db;
+}
+
+export function openAppDatabase(dataDir: string): AppDatabase {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (databaseUrl) {
+    console.log('[Tabernacle] Mode cloud — base PostgreSQL (DATABASE_URL)');
+    return new PostgresDatabase({ connectionString: databaseUrl });
+  }
+
+  return openSqliteDatabase(dataDir);
 }

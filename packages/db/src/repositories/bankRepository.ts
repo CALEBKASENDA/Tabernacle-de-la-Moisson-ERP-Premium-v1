@@ -1,9 +1,9 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId, formatMoneyMicro, parseMoneyMicro } from '@tabernacle/erp-premium-domain';
 
 export class BankRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   createBankAccount(params: {
     ctx: TenantContext;

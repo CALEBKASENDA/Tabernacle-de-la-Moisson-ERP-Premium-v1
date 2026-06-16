@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { FinanceModule, SecurityModule, PastoralModule, type TenantContext } from '@tabernacle/erp-premium-db';
+import { FinanceModule, SecurityModule, PastoralModule, type TenantContext, type AppDatabase } from '@tabernacle/erp-premium-db';
 import { openAppDatabase } from './database';
 import { extractBearerToken, verifyAccessToken } from './jwt';
 export type AuthenticatedSession = {
@@ -15,7 +15,7 @@ export type AuthenticatedSession = {
 };
 
 export type AppContext = {
-  db: import('@tabernacle/erp-premium-db').SqliteDatabase;
+  db: AppDatabase;
   finance: FinanceModule;
   security: SecurityModule;
   pastoral: PastoralModule;
@@ -32,7 +32,12 @@ export function getAppContext(): AppContext {
 export function initAppContext(): AppContext {
   const dataDir = process.env.TABERNACLE_DATA_DIR ?? path.join(process.cwd(), 'data');
   const dbPath = path.join(dataDir, 'tabernacle-finance.sqlite');
-  console.log(`[Tabernacle] Local-first — base SQLite : ${dbPath}`);
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (databaseUrl) {
+    console.log('[Tabernacle] Cloud central — PostgreSQL');
+  } else {
+    console.log(`[Tabernacle] Local-first — base SQLite : ${dbPath}`);
+  }
 
   const db = openAppDatabase(dataDir);
 

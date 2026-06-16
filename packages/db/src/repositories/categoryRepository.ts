@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export type CategoryRow = {
@@ -12,7 +12,7 @@ export type CategoryRow = {
 };
 
 export class CategoryRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   list(ctx: TenantContext): CategoryRow[] {
     return this.db.all<CategoryRow>(

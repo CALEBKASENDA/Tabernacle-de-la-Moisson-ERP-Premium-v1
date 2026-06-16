@@ -1,5 +1,5 @@
 import type { TenantContext } from './tenantContext';
-import type { SqliteDatabase } from './sqlite/sqliteDatabase';
+import type { AppDatabase } from './database/appDatabase';
 import { ensureFinanceSchema, seedChurchDefaults, ensureDefaultExchangeRate } from './schema/initFinanceSchema';
 import { ExchangeRateRepository } from './repositories/exchangeRateRepository';
 import { FinancialOperationRepository } from './repositories/financialOperationRepository';
@@ -49,7 +49,7 @@ export class FinanceModule {
   private readonly recalc: FinanceRecalculationService;
   private readonly syncReplay: SyncReplayService;
 
-  constructor(private readonly db: SqliteDatabase, dataDir?: string) {
+  constructor(private readonly db: AppDatabase, dataDir?: string) {
     const dir = dataDir ?? process.env.TABERNACLE_DATA_DIR ?? path.join(process.cwd(), 'data');
     this.exchangeRates = new ExchangeRateRepository(db);
     this.operations = new FinancialOperationRepository(db);
@@ -67,7 +67,7 @@ export class FinanceModule {
     this.syncReplay = new SyncReplayService(db);
   }
 
-  static bootstrap(db: SqliteDatabase, churchId: string, churchName: string, dataDir?: string): FinanceModule {
+  static bootstrap(db: AppDatabase, churchId: string, churchName: string, dataDir?: string): FinanceModule {
     ensureFinanceSchema(db);
     seedChurchDefaults(db, churchId, churchName);
     ensureDefaultExchangeRate(db, churchId);

@@ -1,10 +1,10 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import type { ClosureType, FinancialClosure } from '@tabernacle/erp-premium-domain';
 import { isDateLockedByClosures } from '@tabernacle/erp-premium-domain';
 
 export class ClosureRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   async getActiveClosuresForChurch(ctx: TenantContext): Promise<FinancialClosure[]> {
     const rows = this.db.all<{

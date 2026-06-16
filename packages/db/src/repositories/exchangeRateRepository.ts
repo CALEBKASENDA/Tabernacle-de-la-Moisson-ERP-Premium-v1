@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import {
   type ExchangeRate,
   formatRateDisplay,
@@ -31,7 +31,7 @@ function rowToRate(row: RateRow, churchId: string): ExchangeRate {
 }
 
 export class ExchangeRateRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   /** Resolve USD<->CDF rate for a date (either direction stored). */
   getRateForDate(params: {

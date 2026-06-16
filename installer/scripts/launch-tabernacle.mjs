@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import net from 'node:net';
+import http from 'node:http';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const installRoot = path.resolve(__dirname, '..');
@@ -53,6 +54,33 @@ function isPortOpen(port) {
   });
 }
 
+function checkHealth() {
+  return new Promise((resolve) => {
+    const req = http.get(
+      { host: '127.0.0.1', port: PORT, path: '/health', timeout: 2000 },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            resolve(data?.status === 'ok' || data?.status === 'starting');
+          } catch {
+            resolve(false);
+          }
+        });
+      },
+    );
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
 function openPath(target) {
   execFile('cmd.exe', ['/c', 'start', '', target], { windowsHide: true });
 }
@@ -92,13 +120,28 @@ function openApp() {
   openPath(url);
 }
 
-async function waitForPort(port, maxMs = 8000) {
-  const step = 80;
-  for (let elapsed = 0; elapsed < maxMs; elapsed += step) {
-    if (await isPortOpen(port)) return true;
-    await new Promise((r) => setTimeout(r, step));
+async function waitForServer(maxMs = 90_000) {
+  let delay = 80;
+  for (let elapsed = 0; elapsed < maxMs; elapsed += delay) {
+    if ((await isPortOpen(PORT)) && (await checkHealth())) return true;
+    await new Promise((r) => setTimeout(r, delay));
+    if (delay < 500) delay += 20;
   }
   return false;
+}
+
+function clearPidFile() {
+  try {
+    fs.unlinkSync(pidFile);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readPidFile() {
+  if (!fs.existsSync(pidFile)) return null;
+  const pid = Number(fs.readFileSync(pidFile, 'utf8').trim());
+  return Number.isFinite(pid) ? pid : null;
 }
 
 function ensureEnvFile() {
@@ -171,7 +214,7 @@ function startServer() {
       WEB_DIST_DIR: webDist,
       HOST: '127.0.0.1',
       PORT: String(PORT),
-      TABERNACLE_APP_VERSION: '1.5.5',
+      TABERNACLE_APP_VERSION: '1.5.6',
       NODE_ENV: 'production',
     },
   });
@@ -179,6 +222,22 @@ function startServer() {
   child.unref();
   fs.writeFileSync(pidFile, String(child.pid), 'utf8');
   return child.pid;
+}
+
+function showError(message) {
+  execFile(
+    'mshta',
+    [
+      'javascript:alert("Tabernacle ERP\\n\\n' +
+        message.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n') +
+        '");close()',
+    ],
+    { windowsHide: true },
+  );
+}
+
+async function serverResponding() {
+  return (await isPortOpen(PORT)) && (await checkHealth());
 }
 
 async function main() {
@@ -191,22 +250,39 @@ async function main() {
   ensureEnvFile();
   migrateLegacyDataIfNeeded();
 
-  if (fs.existsSync(pidFile)) {
-    const oldPid = Number(fs.readFileSync(pidFile, 'utf8').trim());
-    if (isPidAlive(oldPid) || (await isPortOpen(PORT))) {
-      openApp();
-      return;
-    }
-    try { fs.unlinkSync(pidFile); } catch { /* ignore */ }
+  const oldPid = readPidFile();
+  if (oldPid && !isPidAlive(oldPid)) {
+    clearPidFile();
   }
 
-  if (await isPortOpen(PORT)) {
+  if (await serverResponding()) {
     openApp();
     return;
   }
 
+  if (oldPid && isPidAlive(oldPid)) {
+    const ready = await waitForServer(15_000);
+    if (ready) {
+      openApp();
+      return;
+    }
+    clearPidFile();
+  }
+
   startServer();
-  await waitForPort(PORT);
+  const ready = await waitForServer();
+  if (!ready) {
+    let detail = '';
+    if (fs.existsSync(logErr)) {
+      const tail = fs.readFileSync(logErr, 'utf8').slice(-1200);
+      if (tail.trim()) detail = `\n\n${tail.trim()}`;
+    }
+    throw new Error(
+      `Le serveur local n'a pas demarre (127.0.0.1:${PORT}).\n` +
+        `Consultez les journaux :\n  ${logOut}\n  ${logErr}${detail}`,
+    );
+  }
+
   openApp();
 }
 
@@ -214,16 +290,10 @@ main().catch((err) => {
   try {
     ensureDir(logsDir);
     fs.appendFileSync(logErr, `[${new Date().toISOString()}] Lanceur: ${err?.stack || err}\n`);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   const msg = err instanceof Error ? err.message : String(err);
-  execFile(
-    'mshta',
-    [
-      'javascript:alert("Tabernacle ERP\\n\\n' +
-        msg.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n') +
-        '");close()',
-    ],
-    { windowsHide: true },
-  );
+  showError(msg);
   process.exit(1);
 });

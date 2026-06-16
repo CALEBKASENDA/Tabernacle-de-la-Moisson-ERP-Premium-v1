@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import type { SyncEventIngestInput } from '../repositories/auditRepository';
 import { ExchangeRateRepository } from '../repositories/exchangeRateRepository';
 import { FinancialOperationRepository } from '../repositories/financialOperationRepository';
@@ -29,7 +29,7 @@ export class SyncReplayService {
   private readonly exchangeRates: ExchangeRateRepository;
   private readonly operations: FinancialOperationRepository;
 
-  constructor(private readonly db: SqliteDatabase) {
+  constructor(private readonly db: AppDatabase) {
     this.exchangeRates = new ExchangeRateRepository(db);
     this.operations = new FinancialOperationRepository(db);
   }

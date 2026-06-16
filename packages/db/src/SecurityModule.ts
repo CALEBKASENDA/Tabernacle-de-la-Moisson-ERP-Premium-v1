@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from './sqlite/sqliteDatabase';
+import type { AppDatabase } from './database/appDatabase';
 
 import { newId } from '@tabernacle/erp-premium-domain';
 
@@ -20,7 +20,7 @@ export class SecurityModule {
 
 
 
-  private constructor(private readonly db: SqliteDatabase) {
+  private constructor(private readonly db: AppDatabase) {
 
     this.churches = new ChurchRepository(db);
 
@@ -30,7 +30,7 @@ export class SecurityModule {
 
 
 
-  static bootstrap(db: SqliteDatabase, defaultChurchId: string): SecurityModule {
+  static bootstrap(db: AppDatabase, defaultChurchId: string): SecurityModule {
 
     seedSecurityDefaults(db, defaultChurchId);
 

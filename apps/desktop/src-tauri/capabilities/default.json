@@ -1,11 +1,12 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "com.tabernacle.moisson.erp",
   "description": "ERP finance Tabernacle de la Moisson",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:allow-close",
-    "core:window:allow-set-title"
+    "core:window:allow-set-title",
+    "allow-api-request"
   ]
 }

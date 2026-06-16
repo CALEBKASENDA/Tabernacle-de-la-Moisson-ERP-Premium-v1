@@ -1,5 +1,6 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { FINANCE_FULL_SCHEMA_SQL } from './financeFullSchema';
+import { FINANCE_FULL_SCHEMA_POSTGRES_SQL } from './financeFullSchema.postgres';
 import { migrateOptionalFundId } from './migrateOptionalFund';
 import { migrateReceiptsUsdColumn } from './migrateReceiptsUsd';
 import { migrateUsdDirectColumns } from './migrateUsdDirectColumns';
@@ -15,8 +16,8 @@ registerMigration(1, 'bank_reconciliation_match', migrateBankReconciliationMatch
 registerMigration(2, 'church_member', migrateMembers);
 registerMigration(3, 'pastoral_extended_oauth', migratePastoralExtended);
 
-export function ensureFinanceSchema(db: SqliteDatabase): void {
-  db.exec(FINANCE_FULL_SCHEMA_SQL);
+export function ensureFinanceSchema(db: AppDatabase): void {
+  db.exec(db.dialect === 'postgres' ? FINANCE_FULL_SCHEMA_POSTGRES_SQL : FINANCE_FULL_SCHEMA_SQL);
   migrateOptionalFundId(db);
   migrateReceiptsUsdColumn(db);
   migrateUsdDirectColumns(db);
@@ -26,7 +27,7 @@ export function ensureFinanceSchema(db: SqliteDatabase): void {
   runVersionedMigrations(db);
 }
 
-export function seedChurchDefaults(db: SqliteDatabase, churchId: string, churchName: string): void {
+export function seedChurchDefaults(db: AppDatabase, churchId: string, churchName: string): void {
   const now = new Date().toISOString();
   const existing = db.get<{ church_id: string }>(
     `SELECT church_id FROM church WHERE church_id = @church_id`,
@@ -65,7 +66,7 @@ export function seedChurchDefaults(db: SqliteDatabase, churchId: string, churchN
 }
 
 /** Crée les fonds par défaut lors de l'activation de la répartition par fonds. */
-export function seedChurchFunds(db: SqliteDatabase, churchId: string): void {
+export function seedChurchFunds(db: AppDatabase, churchId: string): void {
   const now = new Date().toISOString();
   DEFAULT_FUNDS.forEach((name, i) => {
     const id = `fund_${churchId}_${i}`;
@@ -78,7 +79,7 @@ export function seedChurchFunds(db: SqliteDatabase, churchId: string): void {
 }
 
 /** Taux USD/CDF par défaut si aucun taux n'existe encore (bases neuves ou migrations). */
-export function ensureDefaultExchangeRate(db: SqliteDatabase, churchId: string): void {
+export function ensureDefaultExchangeRate(db: AppDatabase, churchId: string): void {
   const existing = db.get<{ c: number }>(
     `SELECT COUNT(*) as c FROM exchange_rate WHERE church_id=@church_id AND deleted_at IS NULL`,
     { church_id: churchId }
@@ -108,7 +109,7 @@ export function ensureDefaultExchangeRate(db: SqliteDatabase, churchId: string):
 }
 
 export function seedSuperAdmin(
-  db: SqliteDatabase,
+  db: AppDatabase,
   params: { churchId: string; email: string; fullName: string; passwordHash: string }
 ): string {
   const now = new Date().toISOString();

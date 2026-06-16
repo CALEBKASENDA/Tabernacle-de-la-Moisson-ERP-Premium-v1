@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export type UserRow = {
@@ -29,7 +29,7 @@ export type UserAccessProfile = {
 };
 
 export class UserRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   listByChurch(churchId: string): Array<UserRow & { roles: string; churches: string }> {
     return this.db.all<UserRow & { roles: string; churches: string }>(

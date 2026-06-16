@@ -1,3 +1,5 @@
+import type { AppDatabase, DbTransaction } from '../database/appDatabase';
+
 type DbInstance = {
   prepare: (sql: string) => { run: (p?: object) => void; get: (p?: object) => unknown; all: (p?: object) => unknown[] };
   pragma: (v: string) => unknown;
@@ -49,7 +51,8 @@ export function migratePlainDatabaseToEncrypted(dbFilePath: string, passphrase: 
   }
 }
 
-export class SqliteDatabase {
+export class SqliteDatabase implements AppDatabase {
+  readonly dialect = 'sqlite' as const;
   private readonly db: DbInstance;
 
   constructor(private readonly options: SqliteDatabaseOptions) {
@@ -79,8 +82,8 @@ export class SqliteDatabase {
     return this.db;
   }
 
-  withTransaction<T>(fn: (tx: DbInstance) => T): T {
-    return this.db.transaction(() => fn(this.db))();
+  withTransaction<T>(fn: (tx: DbTransaction) => T): T {
+    return this.db.transaction(() => fn(this.db as unknown as DbTransaction))();
   }
 
   run(sql: string, params?: Record<string, unknown>): void {

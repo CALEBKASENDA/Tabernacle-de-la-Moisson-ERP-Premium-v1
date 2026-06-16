@@ -9,9 +9,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "tauri": "npx tauri",
-    "tauri:dev": "npx tauri dev",
-    "tauri:build": "npx tauri build"
+    "tauri": "npx --yes @tauri-apps/cli@2.2.0",
+    "tauri:dev": "npx --yes @tauri-apps/cli@2.2.0 dev",
+    "tauri:build": "npx --yes @tauri-apps/cli@2.2.0 build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.2.0",

@@ -1,9 +1,9 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import type { AuditEntry } from '@tabernacle/erp-premium-domain';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export class AuditRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   append(entry: AuditEntry): void {
     this.db.run(

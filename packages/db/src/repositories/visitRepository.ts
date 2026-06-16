@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export type VisitRow = {
@@ -14,7 +14,7 @@ export type VisitRow = {
 };
 
 export class VisitRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   list(ctx: TenantContext, filters?: { dateFrom?: string; dateTo?: string }): VisitRow[] {
     let sql = `SELECT * FROM pastoral_visit WHERE church_id=@church_id AND deleted_at IS NULL`;

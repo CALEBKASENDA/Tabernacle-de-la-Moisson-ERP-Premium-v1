@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-api-request"
+description = "Permet les appels API embarques via IPC Tauri"
+commands.allow = ["api_request"]

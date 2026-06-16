@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export type EventRow = {
@@ -12,7 +12,7 @@ export type EventRow = {
 };
 
 export class EventRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   list(ctx: TenantContext): EventRow[] {
     return this.db.all<EventRow>(

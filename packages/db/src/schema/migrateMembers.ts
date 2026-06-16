@@ -1,6 +1,6 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
-export function migrateMembers(db: SqliteDatabase): void {
+export function migrateMembers(db: AppDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS church_member (
       member_id TEXT PRIMARY KEY,

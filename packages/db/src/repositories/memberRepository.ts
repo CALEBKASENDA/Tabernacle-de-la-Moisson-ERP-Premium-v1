@@ -1,5 +1,5 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export type MemberRow = {
@@ -17,7 +17,7 @@ export type MemberRow = {
 };
 
 export class MemberRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   list(ctx: TenantContext, filters?: { q?: string; status?: string }): MemberRow[] {
     let sql = `SELECT * FROM church_member WHERE church_id=@church_id AND deleted_at IS NULL`;

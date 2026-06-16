@@ -1,13 +1,14 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
+import { getTableColumns } from './schemaUtils';
 
-function fundIdIsRequired(db: SqliteDatabase, table: string): boolean {
-  const rows = db.all<{ name: string; notnull: number }>(`PRAGMA table_info('${table}')`);
+function fundIdIsRequired(db: AppDatabase, table: string): boolean {
+  const rows = getTableColumns(db, table);
   const fundCol = rows.find((r) => r.name === 'fund_id');
   return fundCol?.notnull === 1;
 }
 
 function rebuildTable(
-  db: SqliteDatabase,
+  db: AppDatabase,
   table: string,
   createNewSql: string,
   columns: string[],
@@ -24,8 +25,9 @@ function rebuildTable(
   db.exec('PRAGMA foreign_keys=ON');
 }
 
-/** Rend fund_id facultatif sur les tables financières (bases existantes). */
-export function migrateOptionalFundId(db: SqliteDatabase): void {
+/** Rend fund_id facultatif sur les tables financières (bases SQLite existantes). */
+export function migrateOptionalFundId(db: AppDatabase): void {
+  if (db.dialect === 'postgres') return;
   rebuildTable(
     db,
     'financial_operation',

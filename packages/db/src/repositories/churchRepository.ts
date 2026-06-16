@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 import { seedChurchDefaults, seedChurchFunds } from '../schema/initFinanceSchema';
 
@@ -12,7 +12,7 @@ export type ChurchRow = {
 };
 
 export class ChurchRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   list(): ChurchRow[] {
     return this.db.all<ChurchRow>(

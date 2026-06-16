@@ -1,10 +1,10 @@
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
 type PiecePrefix = 'REC' | 'DEP' | 'CAI' | 'BAN';
 
 export class NumberingSequenceRepository {
-  constructor(private readonly db: SqliteDatabase) {}
+  constructor(private readonly db: AppDatabase) {}
 
   async getNext(params: {
     ctx: TenantContext;

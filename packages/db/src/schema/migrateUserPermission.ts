@@ -1,7 +1,7 @@
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 
 /** Permissions personnalisées par utilisateur et par église. */
-export function migrateUserPermission(db: SqliteDatabase): void {
+export function migrateUserPermission(db: AppDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_permission (
       church_id TEXT NOT NULL,

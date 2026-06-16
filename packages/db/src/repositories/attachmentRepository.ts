@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { TenantContext } from '../tenantContext';
-import type { SqliteDatabase } from '../sqlite/sqliteDatabase';
+import type { AppDatabase } from '../database/appDatabase';
 import { newId } from '@tabernacle/erp-premium-domain';
 
 export type AttachmentRow = {
@@ -21,7 +21,7 @@ export type AttachmentRow = {
 
 export class AttachmentRepository {
   constructor(
-    private readonly db: SqliteDatabase,
+    private readonly db: AppDatabase,
     private readonly dataDir: string
   ) {}
 

@@ -189,7 +189,7 @@ TABERNACLE_BOOTSTRAP_NAME=Mister Sensei5
     $env:WEB_DIST_DIR = $WebDist
     $env:HOST = '127.0.0.1'
     $env:PORT = '3847'
-    $env:TABERNACLE_APP_VERSION = '1.5.1'
+    $env:TABERNACLE_APP_VERSION = '1.5.6'
 
     $proc = Start-Process -FilePath $NodeExe `
         -ArgumentList "`"$ServerJs`"" `

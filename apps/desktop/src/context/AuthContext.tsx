@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { apiTransport } from '../api/transport';
 import { traduireErreur } from '../i18n/fr';
 
 export type AuthUser = {
@@ -60,9 +61,10 @@ export function getAuthHeaders(): Record<string, string> {
 }
 
 async function authRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  let res: Response;
+  let status: number;
+  let text: string;
   try {
-    res = await fetch(`/api/v1${path}`, {
+    const res = await apiTransport(`/api/v1${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -70,25 +72,26 @@ async function authRequest<T>(path: string, options?: RequestInit): Promise<T> {
         ...options?.headers,
       },
     });
+    status = res.status;
+    text = res.text;
   } catch {
     throw new Error('Impossible de joindre l\'API. Vérifiez que l\'application est démarrée (icône ou raccourci Tabernacle).');
   }
-  const text = await res.text();
   if (!text) {
-    if (res.status === 502 || res.status === 504 || res.status === 0) {
+    if (status === 502 || status === 504 || status === 0) {
       throw new Error('Serveur API indisponible. Relancez Tabernacle de la Moisson ERP.');
     }
-    throw new Error(`Réponse vide du serveur (HTTP ${res.status})`);
+    throw new Error(`Réponse vide du serveur (HTTP ${status})`);
   }
   let json: { error?: string } & T;
   try {
     json = JSON.parse(text) as { error?: string } & T;
   } catch {
-    throw new Error(res.ok ? 'Réponse serveur invalide' : `Erreur serveur (HTTP ${res.status})`);
+    throw new Error(status >= 200 && status < 300 ? 'Réponse serveur invalide' : `Erreur serveur (HTTP ${status})`);
   }
-  if (!res.ok) {
+  if (status < 200 || status >= 300) {
     const msg = json.error?.trim();
-    throw new Error(traduireErreur(msg && msg !== 'Internal Server Error' ? msg : `Erreur HTTP ${res.status}`));
+    throw new Error(traduireErreur(msg && msg !== 'Internal Server Error' ? msg : `Erreur HTTP ${status}`));
   }
   return json;
 }
