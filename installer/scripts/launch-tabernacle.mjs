@@ -139,7 +139,7 @@ function startServer() {
       WEB_DIST_DIR: webDist,
       HOST: '127.0.0.1',
       PORT: String(PORT),
-      TABERNACLE_APP_VERSION: '1.5.3',
+      TABERNACLE_APP_VERSION: '1.5.4',
       NODE_ENV: 'production',
     },
   });

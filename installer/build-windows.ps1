@@ -2,7 +2,7 @@
 # Usage : npm run installer:win
 
 param(
-    [string]$NodeVersion = '22.16.0',
+    [string]$NodeVersion = '24.16.0',
     [switch]$SkipBuild,
     [switch]$PortableOnly
 )
@@ -59,6 +59,16 @@ if (-not $SkipBuild) {
         if ($LASTEXITCODE -ne 0) { throw "npm install a echoue ($LASTEXITCODE)" }
         npm run build:all
         if ($LASTEXITCODE -ne 0) { throw "build:all a echoue ($LASTEXITCODE)" }
+        # Modules natifs (better-sqlite3) : aligner la version Node du build avec NodeVersion ci-dessus.
+        $nodeVer = (node -p "process.versions.modules")
+        $expected = switch -Regex ($NodeVersion) {
+            '^24\.' { '137' }
+            '^22\.' { '127' }
+            default { $null }
+        }
+        if ($expected -and $nodeVer -ne $expected) {
+            throw "Node local (MODULE $nodeVer) incompatible avec NodeVersion $NodeVersion (MODULE $expected attendu). Utilisez la meme version majeure."
+        }
     } finally {
         Pop-Location
     }
