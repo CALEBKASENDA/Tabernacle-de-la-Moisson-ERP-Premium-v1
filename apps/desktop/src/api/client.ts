@@ -1,5 +1,6 @@
 import { getAuthHeaders } from '../context/AuthContext';
 import { traduireErreur } from '../i18n/fr';
+import { formatAuthError } from './authErrors';
 import { apiTransport } from './transport';
 
 const API_BASE = '/api/v1';
@@ -28,6 +29,7 @@ async function parseJsonResponse<T>(
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let status: number;
   let text: string;
+  let transportFailed = false;
   try {
     const res = await apiTransport(`${API_BASE}${path}`, {
       ...options,
@@ -40,13 +42,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     status = res.status;
     text = res.text;
   } catch {
-    throw new Error('Impossible de joindre l\'API. Vérifiez que l\'application est démarrée.');
+    transportFailed = true;
+    status = 0;
+    text = '';
   }
-  const { json } = await parseJsonResponse<{ error?: string } & T>(status, text);
-  if (status < 200 || status >= 300) {
+  if (transportFailed || status < 200 || status >= 300) {
+    if (transportFailed || !text.trim()) {
+      throw new Error(formatAuthError(status, text, transportFailed));
+    }
+    const { json } = await parseJsonResponse<{ error?: string } & T>(status, text);
     const msg = json.error?.trim();
     throw new Error(traduireErreur(msg && msg !== 'Internal Server Error' ? msg : `Erreur HTTP ${status}`));
   }
+  const { json } = await parseJsonResponse<T>(status, text);
   return json;
 }
 

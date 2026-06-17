@@ -9,6 +9,7 @@ data/
 apps/desktop/dist/
 installer/staging/
 installer/staging_work/
+installer/staging_clean/
 installer/output/*
 !installer/output/TabernacleERP-Setup-1.6.1.exe
 installer/cache/

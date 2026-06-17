@@ -77,16 +77,17 @@ fn show_fatal_error(message: &str) {
     }
 }
 
-/// Dossier contenant l'exécutable (Tauri `resource_dir` sur Windows, pas `executable_dir`).
+/// Dossier d'installation : répertoire de TabernacleERP.exe (`config/`, `data/` à côté de l'exe).
 fn install_root_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            return Some(parent.to_path_buf());
+        }
+    }
     app.path()
-        .resource_dir()
+        .executable_dir()
         .ok()
-        .or_else(|| {
-            std::env::current_exe()
-                .ok()
-                .and_then(|path| path.parent().map(Path::to_path_buf))
-        })
+        .or_else(|| app.path().resource_dir().ok())
 }
 
 pub fn run() {
@@ -178,7 +179,13 @@ fn resolve_resource_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     })?;
 
     let mut tried = Vec::new();
-    for base in [install_root.join("resources"), install_root.clone()] {
+    for base in [
+        install_root.join("resources"),
+        install_root.clone(),
+        app.path()
+            .resource_dir()
+            .unwrap_or_else(|_| install_root.clone()),
+    ] {
         let candidate = base.join(&embedded_rel);
         tried.push(candidate.display().to_string());
         if candidate.exists() {

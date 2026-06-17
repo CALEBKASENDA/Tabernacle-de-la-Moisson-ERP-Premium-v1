@@ -66,7 +66,7 @@ function checkHealth() {
         res.on('end', () => {
           try {
             const data = JSON.parse(body);
-            resolve(data?.status === 'ok' || data?.status === 'starting');
+            resolve(data?.status === 'ok');
           } catch {
             resolve(false);
           }

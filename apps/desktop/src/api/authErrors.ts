@@ -2,7 +2,13 @@ import { traduireErreur } from '../i18n/fr';
 
 export function formatAuthError(status: number, bodyText: string, transportFailed: boolean): string {
   if (transportFailed) {
-    return 'Impossible de joindre l\'API interne. Fermez Tabernacle complètement puis relancez-le depuis le menu Démarrer.';
+    if (typeof window !== 'undefined') {
+      const { protocol, hostname } = window.location;
+      if (protocol === 'tauri:' || hostname === 'tauri.localhost') {
+        return 'Impossible de joindre l\'API interne. Fermez Tabernacle complètement puis relancez-le depuis le menu Démarrer.';
+      }
+    }
+    return 'Impossible de joindre l\'API. Vérifiez que l\'application est démarrée (icône ou raccourci Tabernacle).';
   }
   if (!bodyText.trim()) {
     if (status === 503) {

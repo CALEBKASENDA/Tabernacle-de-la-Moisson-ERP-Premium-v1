@@ -7,13 +7,9 @@ async function main(): Promise<void> {
   }
 
   const { app, host, port } = await buildApp();
+  await initializeAppData(app);
   await app.listen({ port, host });
-
-  setImmediate(() => {
-    void initializeAppData(app).then(() => {
-      console.log(`Tabernacle Finance API: http://${host}:${port}/api/v1`);
-    });
-  });
+  console.log(`Tabernacle Finance API: http://${host}:${port}/api/v1`);
 }
 
 main().catch((err) => {

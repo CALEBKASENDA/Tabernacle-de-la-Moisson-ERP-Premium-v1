@@ -10,7 +10,7 @@ if (-not $Version) {
     $versionFile = Join-Path $Root 'packages\domain\src\appVersion.ts'
     $raw = Get-Content $versionFile -Raw
     if ($raw -match "APP_VERSION\s*=\s*'([^']+)'") { $Version = $Matches[1] }
-    else { $Version = '1.6.5' }
+    else { $Version = '1.6.6' }
 }
 
 $setup = Join-Path $Root "installer\output\TabernacleERP-Setup-$Version.exe"
@@ -34,7 +34,10 @@ if (Test-Path $portable) { $assets += $portable }
 
 foreach ($repo in $repos) {
     Write-Host "==> Release $Version sur $repo" -ForegroundColor Cyan
-    gh release delete "v$Version" --repo $repo --yes 2>$null
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    gh release delete "v$Version" --repo $repo --yes 2>&1 | Out-Null
+    $ErrorActionPreference = $prev
     gh release create "v$Version" --repo $repo --title "Tabernacle ERP Premium v$Version" --notes-file $notes @assets
 }
 
