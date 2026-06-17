@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { apiTransport } from '../api/transport';
-import { traduireErreur } from '../i18n/fr';
+import { formatAuthError } from '../api/authErrors';
 
 export type AuthUser = {
   userId: string;
@@ -63,6 +63,7 @@ export function getAuthHeaders(): Record<string, string> {
 async function authRequest<T>(path: string, options?: RequestInit): Promise<T> {
   let status: number;
   let text: string;
+  let transportFailed = false;
   try {
     const res = await apiTransport(`/api/v1${path}`, {
       ...options,
@@ -75,25 +76,21 @@ async function authRequest<T>(path: string, options?: RequestInit): Promise<T> {
     status = res.status;
     text = res.text;
   } catch {
-    throw new Error('Impossible de joindre l\'API. Vérifiez que l\'application est démarrée (icône ou raccourci Tabernacle).');
+    transportFailed = true;
+    status = 0;
+    text = '';
+  }
+  if (transportFailed || status < 200 || status >= 300) {
+    throw new Error(formatAuthError(status, text, transportFailed));
   }
   if (!text) {
-    if (status === 502 || status === 504 || status === 0) {
-      throw new Error('Serveur API indisponible. Relancez Tabernacle de la Moisson ERP.');
-    }
-    throw new Error(`Réponse vide du serveur (HTTP ${status})`);
+    throw new Error(formatAuthError(status, text, false));
   }
-  let json: { error?: string } & T;
   try {
-    json = JSON.parse(text) as { error?: string } & T;
+    return JSON.parse(text) as T;
   } catch {
-    throw new Error(status >= 200 && status < 300 ? 'Réponse serveur invalide' : `Erreur serveur (HTTP ${status})`);
+    throw new Error(formatAuthError(status, text, false));
   }
-  if (status < 200 || status >= 300) {
-    const msg = json.error?.trim();
-    throw new Error(traduireErreur(msg && msg !== 'Internal Server Error' ? msg : `Erreur HTTP ${status}`));
-  }
-  return json;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -150,7 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const next: AuthUser = { ...res.data };
     setUser(next);
     saveStored(next);
-    await refresh();
   };
 
   const logout = async () => {

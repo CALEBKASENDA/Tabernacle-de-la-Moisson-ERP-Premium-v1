@@ -103,7 +103,7 @@ if (-not (Test-Path $envFile)) {
         }
     }
 
-    Set-Content -Path $envFile -Value $out -Encoding UTF8
+    Set-Content -Path $envFile -Value $out -Encoding utf8NoBOM
 }
 
 if ($ForceReset -or $changed -or $needsBootstrap) {
@@ -121,7 +121,7 @@ if ($ForceReset -or $changed -or $needsBootstrap) {
     if (-not $hasReset) {
         $resetOut.Add('TABERNACLE_BOOTSTRAP_RESET=true')
     }
-    Set-Content -Path $envFile -Value $resetOut -Encoding UTF8
+    Set-Content -Path $envFile -Value $resetOut -Encoding utf8NoBOM
     Write-Host "Mot de passe administrateur sera synchronise au prochain demarrage."
 }
 

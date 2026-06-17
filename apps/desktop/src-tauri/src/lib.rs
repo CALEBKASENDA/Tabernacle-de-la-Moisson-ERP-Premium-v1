@@ -267,6 +267,37 @@ fn path_for_subprocess(path: &Path) -> PathBuf {
     PathBuf::from(normalized)
 }
 
+fn apply_config_env(cmd: &mut Command, env_file: &Path) {
+    let Ok(raw) = std::fs::read_to_string(env_file) else {
+        return;
+    };
+    let content = raw.trim_start_matches('\u{FEFF}');
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+        let Some((key, value)) = trimmed.split_once('=') else {
+            continue;
+        };
+        let key = key.trim().trim_start_matches('\u{FEFF}');
+        let mut value = value.trim().to_string();
+        if (value.starts_with('"') && value.ends_with('"'))
+            || (value.starts_with('\'') && value.ends_with('\''))
+        {
+            value = value[1..value.len() - 1].to_string();
+        }
+        if key.starts_with("TABERNACLE_BOOTSTRAP_")
+            || key == "TABERNACLE_DB_KEY"
+            || key == "TABERNACLE_JWT_SECRET"
+            || key == "TABERNACLE_CHURCH_ID"
+            || key == "TABERNACLE_CHURCH_NAME"
+        {
+            cmd.env(key, value);
+        }
+    }
+}
+
 fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn std::error::Error>> {
     let (node, embedded_js, api_cwd, data_dir) = resolve_embedded_paths(app)?;
     let (_, config_dir, install_root) = resolve_install_dirs(app)?;
@@ -315,6 +346,7 @@ fn spawn_embedded_api(app: &tauri::AppHandle) -> Result<ApiBridgeInner, Box<dyn 
 
     if env_file.exists() {
         cmd.env("TABERNACLE_ENV_FILE", path_for_subprocess(&env_file));
+        apply_config_env(&mut cmd, &env_file);
     }
 
     #[cfg(windows)]

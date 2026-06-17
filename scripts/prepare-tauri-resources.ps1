@@ -58,7 +58,7 @@ $stagingApp = Join-Path $InstallerStaging 'app'
 $stagingTauriApp = Join-Path $InstallerStaging 'resources\app'
 $stagingNode = Join-Path $InstallerStaging 'node\node.exe'
 $stagingTauriNode = Join-Path $InstallerStaging 'resources\node\node.exe'
-if ((Test-Path $stagingTauriApp) -and (Test-Path $stagingTauriNode) -and (Test-StagingApp $stagingTauriApp)) {
+if ((Test-Path $stagingTauriApp) -and (Test-Path $stagingTauriNode) -and (Test-StagingApp $stagingTauriApp) -and -not (Test-Path (Join-Path $stagingTauriApp 'apps\desktop\src-tauri\resources'))) {
     Write-Host 'Reutilisation de installer/staging/resources (rapide)...'
     Copy-Tree $stagingTauriApp $AppDest
     Copy-Item $stagingTauriNode (Join-Path $NodeDest 'node.exe') -Force

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadInstallBootstrapConfig, parseEnvFile } from './bootstrapConfig';
 
 function candidateEnvPaths(): string[] {
   const paths: string[] = [];
@@ -22,27 +23,19 @@ function candidateEnvPaths(): string[] {
   return paths;
 }
 
-/** Charge `.env` (sans écraser les variables déjà définies). */
+/** Charge `.env` (sans écraser les variables déjà définies, sauf config bootstrap). */
 export function loadEnv(): void {
+  loadInstallBootstrapConfig();
+
   for (const file of candidateEnvPaths()) {
     if (!fs.existsSync(file)) continue;
-    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const eq = trimmed.indexOf('=');
-      if (eq <= 0) continue;
-      const key = trimmed.slice(0, eq).trim();
-      let value = trimmed.slice(eq + 1).trim();
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1);
-      }
+    const map = parseEnvFile(fs.readFileSync(file, 'utf8'));
+    for (const [key, value] of Object.entries(map)) {
       if (process.env[key] === undefined) {
         process.env[key] = value;
       }
     }
+    loadInstallBootstrapConfig();
     return;
   }
 }

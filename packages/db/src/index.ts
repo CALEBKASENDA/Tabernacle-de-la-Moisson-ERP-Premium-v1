@@ -8,6 +8,7 @@ export * from './SecurityModule';
 export * from './PastoralModule';
 export * from './security/password';
 export * from './schema/initFinanceSchema';
+export { seedSecurityDefaults } from './schema/seedSecurity';
 export * from './repositories/exchangeRateRepository';
 export * from './repositories/financialOperationRepository';
 export * from './repositories/auditRepository';
