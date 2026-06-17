@@ -77,6 +77,7 @@ Name: "{group}\Modifier la configuration"; Filename: "notepad.exe"; Parameters: 
 [Run]
 #ifdef TauriMode
 Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\link-workspace-packages.ps1"" -AppRoot ""{app}\resources\app"""; StatusMsg: "Configuration de l'API embarquee..."; Flags: runhidden waituntilterminated
+Filename: "{#MyPowerShell}"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\apply-bootstrap-config.ps1"" -InstallRoot ""{app}"""; StatusMsg: "Configuration du compte administrateur..."; Flags: runhidden waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Description: "Lancer {#MyAppName} maintenant"; Flags: postinstall nowait skipifsilent
 #else
 Filename: "{app}\scripts\Launch-Tabernacle.vbs"; Description: "Lancer {#MyAppName} maintenant"; Flags: postinstall nowait skipifsilent shellexec
