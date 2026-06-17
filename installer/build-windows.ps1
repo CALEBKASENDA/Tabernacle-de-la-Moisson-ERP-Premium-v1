@@ -68,7 +68,9 @@ function Test-StagingReadyTauri($stagingRoot) {
         (Join-Path $stagingRoot 'resources\node\node.exe'),
         (Join-Path $stagingRoot 'resources\app\apps\api\dist\embedded.js'),
         (Join-Path $stagingRoot 'resources\app\apps\api\dist\appFactory.js'),
-        (Join-Path $stagingRoot 'resources\app\apps\desktop\dist\index.html')
+        (Join-Path $stagingRoot 'resources\app\apps\desktop\dist\index.html'),
+        (Join-Path $stagingRoot 'resources\app\node_modules\@tabernacle\erp-premium-db\dist\index.js'),
+        (Join-Path $stagingRoot 'resources\app\node_modules\@tabernacle\erp-premium-domain\dist\index.js')
     )
     $missing = $required | Where-Object { -not (Test-Path $_) }
     if ($missing) {
@@ -150,10 +152,7 @@ function Prepare-TauriStaging($releaseExe) {
     Copy-Item (Join-Path $InstallerDir 'assets\tabernacle.ico') (Join-Path $Staging 'assets\tabernacle.ico') -Force
     Set-Content -Path (Join-Path $Staging 'data\.gitkeep') -Value '' -Encoding ASCII
 
-    $projectEnv = Join-Path $Root 'config\.env'
-    if (Test-Path $projectEnv) {
-        Copy-Item $projectEnv (Join-Path $Staging 'config\.env') -Force
-    }
+    & (Join-Path $Root 'scripts\link-workspace-packages.ps1') -AppRoot (Join-Path $Staging 'resources\app')
 
     Test-StagingReadyTauri $Staging
 }
@@ -201,6 +200,8 @@ function Build-LegacyStaging {
     Copy-Item (Join-Path $InstallerDir 'config\*') (Join-Path $Staging 'config') -Recurse
     Copy-Item (Join-Path $InstallerDir 'assets\tabernacle.ico') (Join-Path $Staging 'assets\tabernacle.ico') -Force
     Copy-Item (Join-Path $InstallerDir 'assets\boot.html') (Join-Path $Staging 'assets\boot.html') -Force
+
+    & (Join-Path $Root 'scripts\link-workspace-packages.ps1') -AppRoot $appDest
 
     New-Item -ItemType Directory -Force -Path $Cache | Out-Null
     $nodeCache = Join-Path $Cache "node-v$NodeVersion-win-x64.exe"

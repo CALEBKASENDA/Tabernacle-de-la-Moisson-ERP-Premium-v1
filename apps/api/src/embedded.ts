@@ -30,6 +30,13 @@ function writeLine(obj: EmbeddedResponse): void {
   process.stdout.write(`${JSON.stringify(obj)}\n`);
 }
 
+function failStartup(err: unknown): never {
+  const message = err instanceof Error ? err.message : String(err);
+  writeLine({ id: 'ready', ok: false, error: message });
+  console.error(err);
+  process.exit(1);
+}
+
 function toInjectOptions(req: EmbeddedRequest): InjectOptions {
   const url = req.url ?? req.path ?? '/';
   const method = (req.method ?? 'GET').toUpperCase() as InjectOptions['method'];
@@ -92,7 +99,4 @@ async function main(): Promise<void> {
   });
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch(failStartup);

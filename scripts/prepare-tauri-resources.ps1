@@ -32,7 +32,10 @@ function Test-StagingApp($appRoot) {
         (Join-Path $appRoot 'apps\api\dist\appFactory.js'),
         (Join-Path $appRoot 'apps\desktop\dist\index.html'),
         (Join-Path $appRoot 'packages\db\dist\index.js'),
-        (Join-Path $appRoot 'node_modules\better-sqlite3')
+        (Join-Path $appRoot 'packages\domain\dist\index.js'),
+        (Join-Path $appRoot 'node_modules\better-sqlite3'),
+        (Join-Path $appRoot 'node_modules\@tabernacle\erp-premium-db\dist\index.js'),
+        (Join-Path $appRoot 'node_modules\@tabernacle\erp-premium-domain\dist\index.js')
     ) | ForEach-Object {
         if (-not (Test-Path $_)) { return $false }
     }
@@ -52,8 +55,14 @@ if (Test-Path $TauriRes) {
 New-Item -ItemType Directory -Force -Path $AppDest, $NodeDest, $ScriptsDest | Out-Null
 
 $stagingApp = Join-Path $InstallerStaging 'app'
+$stagingTauriApp = Join-Path $InstallerStaging 'resources\app'
 $stagingNode = Join-Path $InstallerStaging 'node\node.exe'
-if ((Test-Path $stagingApp) -and (Test-Path $stagingNode) -and (Test-StagingApp $stagingApp)) {
+$stagingTauriNode = Join-Path $InstallerStaging 'resources\node\node.exe'
+if ((Test-Path $stagingTauriApp) -and (Test-Path $stagingTauriNode) -and (Test-StagingApp $stagingTauriApp)) {
+    Write-Host 'Reutilisation de installer/staging/resources (rapide)...'
+    Copy-Tree $stagingTauriApp $AppDest
+    Copy-Item $stagingTauriNode (Join-Path $NodeDest 'node.exe') -Force
+} elseif ((Test-Path $stagingApp) -and (Test-Path $stagingNode) -and (Test-StagingApp $stagingApp)) {
     Write-Host 'Reutilisation de installer/staging (rapide)...'
     Copy-Tree $stagingApp $AppDest
     Copy-Item $stagingNode (Join-Path $NodeDest 'node.exe') -Force
@@ -118,6 +127,17 @@ $required = @(
 $missing = $required | Where-Object { -not (Test-Path $_) }
 if ($missing) {
     throw "Ressources Tauri incompletes :`n$($missing -join "`n")"
+}
+
+& (Join-Path $Root 'scripts\link-workspace-packages.ps1') -AppRoot $AppDest
+
+$required += @(
+    (Join-Path $AppDest 'node_modules\@tabernacle\erp-premium-db\dist\index.js'),
+    (Join-Path $AppDest 'node_modules\@tabernacle\erp-premium-domain\dist\index.js')
+)
+$missing = $required | Where-Object { -not (Test-Path $_) }
+if ($missing) {
+    throw "Ressources Tauri incompletes (workspace) :`n$($missing -join "`n")"
 }
 
 @(

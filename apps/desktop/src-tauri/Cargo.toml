@@ -1,6 +1,6 @@
 [package]
 name = "tabernacle-erp"
-version = "1.6.2"
+version = "1.6.3"
 description = "Tabernacle de la Moisson ERP Premium"
 authors = ["Tabernacle de la Moisson"]
 edition = "2021"
