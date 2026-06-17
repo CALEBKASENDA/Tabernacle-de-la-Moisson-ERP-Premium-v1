@@ -11,6 +11,13 @@
 
 ### Installation
 
-Télécharger `TabernacleERP-Setup-1.6.3.exe` et installer par-dessus une version précédente (données conservées).
+**Option A — Archive portable (recommandée pour v1.6.3)**  
+Télécharger `TabernacleERP-Portable-1.6.3.zip`, extraire dans un dossier (ex. `C:\Tabernacle ERP`), lancer `TabernacleERP.exe`.
+
+**Option B — Installateur**  
+Si `TabernacleERP-Setup-1.6.3.exe` est disponible sur la release, installez par-dessus une version précédente (données conservées). L'installateur exécute automatiquement la configuration des modules workspace.
+
+**Correctif sur v1.6.2 déjà installée**  
+Exécutez en administrateur : `scripts\Fix-WorkspaceLinks.cmd` dans le dossier d'installation, puis relancez l'application.
 
 Si l'erreur persistait, supprimez le fichier `config\.env` de l'installation puis relancez l'application (un nouveau fichier sera créé depuis le modèle).
